@@ -6,10 +6,10 @@
 
 // Declare a chassis object with nominal dimensions
 // In practice, adjust the parameters: wheel diam, encoder counts, wheel track
-Chassis chassis(7.0, 1440, 14.9);
+Chassis chassis;
 
-#define MOVE_SPEED 1   // Inches per second
-#define TURN_SPEED 15  // Degrees per second
+#define MOVE_SPEED 12  // Inches per second
+#define TURN_SPEED 90  // Degrees per second
 #define IN_TO_CM 2.54
 
 /**
@@ -18,9 +18,10 @@ Chassis chassis(7.0, 1440, 14.9);
  * @param length Length of each side in inches
  */
 void polygon(int sides, float length) {
+  float angle = 360.0f / sides;
   for (int sideIndex = 0; sideIndex < sides; sideIndex++) {
-    chassis.driveFor(length * IN_TO_CM, MOVE_SPEED * IN_TO_CM);
-    chassis.turnFor(360.0 / (float)sides, TURN_SPEED);
+    chassis.driveFor(length * IN_TO_CM, MOVE_SPEED * IN_TO_CM, true);
+    chassis.turnFor(angle, TURN_SPEED, true);
   }
 }
 
@@ -33,8 +34,11 @@ void setup() {
   chassis.init();
   chassis.idle();
 
+  // delay so the user can get away
+  delay(3000);
+
   // these can be undone for the student to adjust
-  //chassis.setMotorPIDcoeffs(5, 0.5);
+  // chassis.setMotorPIDcoeffs(5, 0.5);
 
   // Drive in a polygon
   polygon(3, 12);
@@ -44,6 +48,4 @@ void setup() {
  * The main loop for the program. The loop function is repeatedly called
  * after setup() is complete.
  */
-void loop() {
-
-}
+void loop() {}
