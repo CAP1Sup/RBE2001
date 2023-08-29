@@ -37,9 +37,6 @@ void setup() {
   // delay so the user can get away
   delay(3000);
 
-  // these can be undone for the student to adjust
-  // chassis.setMotorPIDcoeffs(5, 0.5);
-
   // Drive in a polygon
   polygon(3, 12);
 }
