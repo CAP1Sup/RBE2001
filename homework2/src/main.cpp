@@ -7,17 +7,17 @@
 #define TURN_SPEED 90     // deg/s
 #define SEARCH_EFFORT 50  // Motor power, 0-300ish
 #define INCHES_TO_CM 2.54
-#define LINE_FOLLOW_P 0.1
+#define LINE_FOLLOW_P 0.1  // deg/s per difference in sensor values
 #define L_LINE_FOLLOW_PIN A2
 #define R_LINE_FOLLOW_PIN A3
-#define BLACK_THRESHOLD 500
+#define BLACK_THRESHOLD 500  // White: ~40, Black: ~800
 
 // Globals
 Chassis chassis;
 int lVal, rVal;
-bool onLine;
 
 // Type definitions
+// Direction inverts the sign of the movement
 typedef enum { LEFT = 1, RIGHT = -1 } TURN_DIR;
 
 // Function prototypes
@@ -28,15 +28,11 @@ void turnOnCross(TURN_DIR turnDir);
 void setup() {
   // Setup code here
 
-  // Initialize the serial port
-  // Serial.begin(9600);
-  // Serial.println("Starting Romi Line Follower");
-
   // Set up the chassis
   chassis.init();
   chassis.idle();
 
-  // Delay
+  // Delay to allow user to get away
   delay(1000);
 
   // 30 degree turn to the right to get off line
@@ -72,16 +68,17 @@ void loop() {
 }
 
 /**
- * Follows the line until the cross is found
- * @param driveDir The direction to drive while searching for the line
+ * @brief Follows the line until the cross is found
+ *
  * @param searchDir The direction to search for the line
+ * @return int The encoder count when the cross is found
  */
 int followUntilCross(TURN_DIR searchDir) {
   // White: ~40
   // Black: ~800
 
   // We're not on the line yet
-  onLine = false;
+  bool onLine = false;
 
   // Loop until we find the cross
   while (true) {
@@ -97,7 +94,7 @@ int followUntilCross(TURN_DIR searchDir) {
         chassis.idle();
 
         // Break the loop and return the encoder count
-        // Add a set value to account for the distance between the line sensor
+        // Add a constant to account for the distance between the line sensor
         // and the center of the robot
         return chassis.getLeftEncoderCount(true) + 375;
 
@@ -121,14 +118,14 @@ int followUntilCross(TURN_DIR searchDir) {
       }
     }
 
-    // Limit the update rate to allow motors to move
+    // Limit the update rate to allow motors time to move
     delay(10);
   }
 }
 
 /**
- * Follows the line until the given encoder count is reached
- * @param driveDir The direction to drive while searching for the line
+ * @brief Follows the line until the given encoder count is reached
+ *
  * @param searchDir The direction to search for the line
  * @param encoderCount The encoder count to stop at
  */
@@ -137,7 +134,7 @@ void followUntilCount(TURN_DIR searchDir, int encoderCount) {
   // Black: ~800
 
   // We're not on the line yet
-  onLine = false;
+  bool onLine = false;
 
   // Loop until we find the cross
   while (true) {
@@ -180,8 +177,9 @@ void followUntilCount(TURN_DIR searchDir, int encoderCount) {
 }
 
 /**
- * Moves the robot forward over the cross and turns to the given direction by 70
- * deg
+ * @brief Moves the robot forward over the cross and turns to the given
+ *
+ * @param turnDir The direction to turn
  */
 void turnOnCross(TURN_DIR turnDir) {
   // Move forward over the cross
