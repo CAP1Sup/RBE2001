@@ -40,6 +40,10 @@ void RotaryGripper::init() {
 
   // Perform an analogRead to initialize the ADC
   analogRead(feedbackPin);
+
+#ifdef DEBUG
+  Serial.begin(9600);
+#endif
 }
 
 /**
@@ -64,7 +68,10 @@ void RotaryGripper::setDesiredState(GripperState state) {
 
     // Continuously check if the gripper is in place
     while (abs(angleUpperBound - getAngle()) > POSITION_TOLERANCE) {
-      // Do nothing
+// Do nothing
+#ifdef DEBUG
+      Serial.println(getAngle());
+#endif
     }
 
     // Stop the motor
@@ -76,6 +83,9 @@ void RotaryGripper::setDesiredState(GripperState state) {
     // Continuously check if the gripper is in place
     while (abs(angleLowerBound - getAngle()) > POSITION_TOLERANCE) {
       // Do nothing
+#ifdef DEBUG
+      Serial.println(getAngle());
+#endif
     }
 
     // Delay a little to allow motor to go past center
