@@ -7,12 +7,13 @@
 #define ENCODER_TICKS_PER_REV 540  // ticks per revolution
 
 // Create the objects
-BlueMotor motor(11, 13, 4, false);
-Romi32U4ButtonA button;
+BlueMotor motor(13, 4, true);
+Romi32U4ButtonB buttonB;
+Romi32U4ButtonC buttonC;
 
 // Variables
 unsigned long lastTime = 0;
-uint32_t lastCount = 0;
+int32_t lastCount = 0;
 
 void setup() {
   // Setup code here
@@ -32,8 +33,10 @@ void setup() {
 
 void loop() {
   // Repeating code here
-  if (button.isPressed()) {
+  if (buttonB.isPressed()) {
     motor.setEffort(MOTOR_EFFORT);
+  } else if (buttonC.isPressed()) {
+    motor.setEffort(-MOTOR_EFFORT);
   } else {
     motor.setEffort(0);
   }
@@ -45,7 +48,7 @@ void loop() {
     Serial.print(millis());
 
     // Get the current encoder count
-    uint32_t currentCount = motor.getPosition();
+    int32_t currentCount = motor.getPosition();
 
     // Print the encoder count
     Serial.print(" C: ");

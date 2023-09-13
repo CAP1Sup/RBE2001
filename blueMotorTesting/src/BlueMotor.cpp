@@ -5,15 +5,12 @@
 /**
  * @brief Construct a new Blue Motor object
  *
- * @param pwmPin The PWM pin
  * @param dirPinA The first direction pin
  * @param dirPinB The second direction pin
  * @param reversed Whether or not the motor is reversed
  */
-BlueMotor::BlueMotor(uint8_t pwmPin, uint8_t dirPinA, uint8_t dirPinB,
-                     bool reversed) {
+BlueMotor::BlueMotor(uint8_t dirPinA, uint8_t dirPinB, bool reversed) {
   // Set the pin numbers
-  this->pwmPin = pwmPin;
   this->dirPinA = dirPinA;
   this->dirPinB = dirPinB;
 
@@ -24,9 +21,16 @@ BlueMotor::BlueMotor(uint8_t pwmPin, uint8_t dirPinA, uint8_t dirPinB,
 // Setup the motor
 void BlueMotor::init() {
   // Set the pin modes
-  pinMode(pwmPin, OUTPUT);
+  pinMode(11, OUTPUT);
   pinMode(dirPinA, OUTPUT);
   pinMode(dirPinB, OUTPUT);
+
+  // Configure the pin 11 timer
+  TCCR1A =
+      0xA8;  // 0b10101000; //gcl: added OCR1C for adding a third PWM on pin 11
+  TCCR1B = 0x11;  // 0b00010001;
+  ICR1 = 400;
+  OCR1C = 0;
 
   // Reset the encoder count
   resetPos();
@@ -38,7 +42,7 @@ void BlueMotor::setEffort(int8_t effort) {
   setDirection(effort < 0);
 
   // Set the PWM pin
-  analogWrite(pwmPin, map(abs(effort), 0, 100, 0, 255));
+  OCR1C = constrain(abs(effort) * 4, 0, 400);
 }
 
 /**

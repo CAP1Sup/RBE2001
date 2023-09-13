@@ -6,7 +6,7 @@
 class BlueMotor {
  public:
   // Constructor
-  BlueMotor(uint8_t pwmPin, uint8_t dirPinA, uint8_t dirPinB, bool reversed);
+  BlueMotor(uint8_t dirPinA, uint8_t dirPinB, bool reversed);
 
   // Setup the motor
   void init();
@@ -28,15 +28,12 @@ class BlueMotor {
   void setDirection(bool reverse);
 
   // Pin numbers
-  uint8_t pwmPin;
   uint8_t dirPinA;
   uint8_t dirPinB;
-  uint8_t encPinA;
-  uint8_t encPinB;
 
   // If motor is reversed
   bool reversed;
 
   // Encoder object
-  Encoder encoder = Encoder(2, 3);
+  Encoder encoder = Encoder(0, 1);
 };
