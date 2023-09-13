@@ -4,9 +4,9 @@
 #include <Romi32U4.h>
 
 // Settings
-#define FORWARD_SPEED 6   // in/s
-#define TURN_SPEED 90     // deg/s
-#define SEARCH_EFFORT 50  // Motor power, 0-300ish
+#define FORWARD_SPEED 12   // in/s
+#define TURN_SPEED 90      // deg/s
+#define SEARCH_EFFORT 100  // Motor power, 0-300ish
 #define INCHES_TO_CM 2.54
 #define LINE_FOLLOW_P 0.1  // deg/s per difference in sensor values
 #define L_LINE_FOLLOW_PIN A2
@@ -104,7 +104,7 @@ int followUntilCross(TURN_DIR searchDir) {
         // Break the loop and return the encoder count
         // Add a constant to account for the distance between the line sensor
         // and the center of the robot
-        return chassis.getLeftEncoderCount(true) + 375;
+        return chassis.getLeftEncoderCount(true) + 250;
 
       } else {
         // Calculate the difference between the two line sensors
