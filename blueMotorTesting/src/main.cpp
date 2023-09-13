@@ -7,7 +7,7 @@
 #define ENCODER_TICKS_PER_REV 540  // ticks per revolution
 
 // Create the objects
-BlueMotor motor(13, 4, true);
+BlueMotor motor(4, 13);
 Romi32U4ButtonB buttonB;
 Romi32U4ButtonC buttonC;
 

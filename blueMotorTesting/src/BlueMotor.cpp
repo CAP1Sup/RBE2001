@@ -9,13 +9,10 @@
  * @param dirPinB The second direction pin
  * @param reversed Whether or not the motor is reversed
  */
-BlueMotor::BlueMotor(uint8_t dirPinA, uint8_t dirPinB, bool reversed) {
+BlueMotor::BlueMotor(uint8_t dirPinA, uint8_t dirPinB) {
   // Set the pin numbers
   this->dirPinA = dirPinA;
   this->dirPinB = dirPinB;
-
-  // Save if the motor is reversed
-  this->reversed = reversed;
 }
 
 // Setup the motor
@@ -52,8 +49,8 @@ void BlueMotor::setEffort(int8_t effort) {
  */
 void BlueMotor::setDirection(bool reverse) {
   // Set the direction pins
-  digitalWrite(dirPinA, reverse ? !reversed : reversed);
-  digitalWrite(dirPinB, !reverse ? !reversed : reversed);
+  digitalWrite(dirPinA, reverse);
+  digitalWrite(dirPinB, !reverse);
 }
 
 /**
