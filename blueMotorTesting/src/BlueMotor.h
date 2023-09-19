@@ -2,6 +2,9 @@
 
 #include <Arduino.h>
 #include <Encoder.h>
+#include <PIDcontroller.h>
+
+#define DEFAULT_KP 0.5
 
 class BlueMotor {
  public:
@@ -15,13 +18,18 @@ class BlueMotor {
   void setEffort(int8_t effort);
 
   // Move to a given encoder count
-  void moveTo(int32_t position, uint8_t effort);
+  void moveTo(int32_t position);
 
   // Get the encoder's count
   int32_t getPosition();
 
   // Reset the encoder state
   void resetPos();
+
+  // PID constant setters
+  void setKp(float k) { pid.setKp(k); }
+  void setKi(float k) { pid.setKi(k); }
+  void setKd(float k) { pid.setKd(k); }
 
  private:
   // Set the direction of the motor
@@ -33,4 +41,7 @@ class BlueMotor {
 
   // Encoder object
   Encoder encoder;
+
+  // PID controller
+  PIDController pid = PIDController(DEFAULT_KP);
 };

@@ -64,13 +64,14 @@ void BlueMotor::setDirection(bool reverse) {
  * @param position The encoder count to move to
  * @param effort Maximum effort to use (0-100)
  */
-void BlueMotor::moveTo(int32_t position, uint8_t effort) {
-  // Set the motor effort
-  setEffort(effort * (position > getPosition() ? 1 : -1));
-
+void BlueMotor::moveTo(int32_t position) {
   // Wait until the desired encoder count is reached
-  while (abs(getPosition() - position) > ENCODER_POS_TOLERANCE) {
-    // Do nothing
+  while (abs(position - getPosition()) > ENCODER_POS_TOLERANCE) {
+    // Keep setting the motor effort
+    setEffort(pid.calcEffort(position - getPosition()));
+
+    // Give a minor delay for the motor to move
+    delay(10);
   }
 
   // Stop the motor
