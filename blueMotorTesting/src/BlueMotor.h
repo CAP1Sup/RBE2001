@@ -6,7 +6,7 @@
 class BlueMotor {
  public:
   // Constructor
-  BlueMotor(uint8_t dirPinA, uint8_t dirPinB);
+  BlueMotor(uint8_t dirPinA, uint8_t dirPinB, uint8_t encA, uint8_t encB);
 
   // Setup the motor
   void init();
@@ -32,5 +32,5 @@ class BlueMotor {
   uint8_t dirPinB;
 
   // Encoder object
-  Encoder encoder = Encoder(0, 1);
+  Encoder encoder;
 };

@@ -7,12 +7,17 @@
  *
  * @param dirPinA The first direction pin
  * @param dirPinB The second direction pin
- * @param reversed Whether or not the motor is reversed
+ * @param encA The first encoder pin
+ * @param encB The second encoder pin
  */
-BlueMotor::BlueMotor(uint8_t dirPinA, uint8_t dirPinB) {
+BlueMotor::BlueMotor(uint8_t dirPinA, uint8_t dirPinB, uint8_t encA,
+                     uint8_t encB) {
   // Set the pin numbers
   this->dirPinA = dirPinA;
   this->dirPinB = dirPinB;
+
+  // Initialize the encoder
+  encoder.init(encA, encB);
 }
 
 // Setup the motor
@@ -79,7 +84,7 @@ void BlueMotor::moveTo(int32_t position, uint8_t effort) {
  */
 int32_t BlueMotor::getPosition() {
   // Return the encoder count
-  return encoder.read();
+  return encoder.getPosition();
 }
 
 /**
@@ -88,5 +93,5 @@ int32_t BlueMotor::getPosition() {
  */
 void BlueMotor::resetPos() {
   // Reset the encoder count
-  encoder.write(0);
+  encoder.resetPosition();
 }
