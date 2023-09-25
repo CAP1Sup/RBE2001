@@ -5,7 +5,7 @@
 #define POT_PIN A4
 
 // Create a gripper object
-RotaryGripper gripper(POT_PIN, 24, 140, 0, 34.4);
+RotaryGripper gripper(POT_PIN, 24, 140, 88, 92);
 
 void setup() {
   // Setup code here

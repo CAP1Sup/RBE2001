@@ -1,7 +1,11 @@
+/**
+ * @file RotaryGripper.cpp
+ * @brief This file contains the implementation of the RotaryGripper class, which controls a servo motor and a potentiometer to open and close a gripper.
+ */
+
 #include <RotaryGripper.h>
 
-#define POSITION_TOLERANCE 0.5  // deg
-#define MAX_POWER 50            // %
+#define POSITION_TOLERANCE 5  // ADC values (0-1023)
 
 /**
  * @brief Construct a new Rotary Gripper:: Rotary Gripper object
@@ -9,37 +13,38 @@
  * @param feedbackPin The pin that the potentiometer is connected to
  * @param lowerPotVal The lower bound of the potentiometer (0 to 1023)
  * @param upperPotVal The upper bound of the potentiometer (0 to 1023)
- * @param lowerAngle The lower bound of the angle (deg)
- * @param upperAngle The upper bound of the angle (deg)
+ * @param closedServoAngle The angle of the servo when the gripper is closed (0-180)
+ * @param openServoAngle The angle of the servo when the gripper is open (0-180)
  */
 RotaryGripper::RotaryGripper(uint8_t feedbackPin, uint16_t lowerPotVal,
-                             uint16_t upperPotVal, float lowerAngle,
-                             float upperAngle) {
+                             uint16_t upperPotVal, int closedServoAngle,
+                             int openServoAngle) {
   // Save the feedback pin
   this->feedbackPin = feedbackPin;
 
   // Save the bounds
-  this->potLowerBound = lowerPotVal;
-  this->potUpperBound = upperPotVal;
+  this->closedPotVal = lowerPotVal;
+  this->openPotVal = upperPotVal;
 
   // Save the angles
-  this->angleLowerBound = lowerAngle;
-  this->angleUpperBound = upperAngle;
+  this->closedServoAngle = closedServoAngle;
+  this->openServoAngle = openServoAngle;
 }
 
 /**
  * @brief Initializes the gripper
  *
+ * This function initializes the gripper by attaching the servo motor and performing an analogRead to initialize the ADC.
  */
 void RotaryGripper::init() {
   // Attach the servo
   servo.attach(5);
 
-  // Set the motor power to 0
-  setMotorPower(0);
-
   // Perform an analogRead to initialize the ADC
   analogRead(feedbackPin);
+
+  // Open the gripper
+  setDesiredState(OPEN);
 
 #ifdef DEBUG
   Serial.begin(9600);
@@ -47,13 +52,12 @@ void RotaryGripper::init() {
 }
 
 /**
- * @brief Sets the servo motor power
+ * @brief Sets the servo motor's desired angle
  *
- * @param power The power to set the motor to (-100 to 100)
+ * @param angle The angle to set the servo to (0 to 180)
  */
-void RotaryGripper::setMotorPower(int power) {
-  // Set the motor power
-  servo.writeMicroseconds(1500 + power * 500);
+void RotaryGripper::setServoAngle(int angle) {
+  servo.write(angle);
 }
 
 /**
@@ -64,49 +68,25 @@ void RotaryGripper::setMotorPower(int power) {
 void RotaryGripper::setDesiredState(GripperState state) {
   if (state == OPEN) {
     // Move the motor to open the gripper
-    setMotorPower(MAX_POWER);
+    setServoAngle(openServoAngle);
 
     // Continuously check if the gripper is in place
-    while (abs(angleUpperBound - getAngle()) > POSITION_TOLERANCE) {
+    while (abs(openPotVal - analogRead(feedbackPin)) > POSITION_TOLERANCE) {
 // Do nothing
 #ifdef DEBUG
       Serial.println(getAngle());
 #endif
     }
-
-    // Stop the motor
-    setMotorPower(0);
   } else {
     // Move the motor to close the gripper
-    setMotorPower(-MAX_POWER);
+    setServoAngle(closedServoAngle);
 
     // Continuously check if the gripper is in place
-    while (abs(angleLowerBound - getAngle()) > POSITION_TOLERANCE) {
+    while (abs(closedPotVal - analogRead(feedbackPin)) > POSITION_TOLERANCE) {
       // Do nothing
 #ifdef DEBUG
       Serial.println(getAngle());
 #endif
     }
-
-    // Delay a little to allow motor to go past center
-    delay(50);
-
-    // Stop the motor
-    setMotorPower(0);
   }
-}
-
-/**
- * @brief Gets the current angle of the gripper from the potentiometer
- *
- * @return The current angle of the gripper
- */
-float RotaryGripper::getAngle() {
-  // Convert the potentiometer value to an angle
-  return mapf(analogRead(feedbackPin), potLowerBound, potUpperBound,
-              angleLowerBound, angleUpperBound);
-}
-
-float mapf(float x, float in_min, float in_max, float out_min, float out_max) {
-  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
