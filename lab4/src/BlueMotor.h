@@ -5,8 +5,11 @@
 #include <PIDcontroller.h>
 #include <Servo32U4.h>
 
-
+// Motor settings
 #define DEFAULT_KP 0.5
+#define ENCODER_POS_TOLERANCE 10
+#define LOWERING_DEADBAND 10
+#define RAISING_DEADBAND 10
 
 class BlueMotor {
  public:
@@ -18,6 +21,9 @@ class BlueMotor {
 
   // Set the effort of the motor
   void setEffort(int8_t effort);
+
+  // Set the effort of the motor (with deadband compensation)
+  void setEffortDBC(int8_t effort);
 
   // Move to a given encoder count
   void moveTo(int32_t position);

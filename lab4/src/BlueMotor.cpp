@@ -1,7 +1,5 @@
 #include "BlueMotor.h"
 
-#define ENCODER_POS_TOLERANCE 10
-
 /**
  * @brief Construct a new Blue Motor object
  *
@@ -24,8 +22,29 @@ void BlueMotor::init() {
 
 // Set the effort of the motor controller
 void BlueMotor::setEffort(int8_t effort) {
+  // Constrain the effort
+  effort = constrain(effort, -100, 100);
+
   // Set the servo pulse
   servo.writeMicroseconds(1500 + effort * 5);
+}
+
+// Set the effort of the motor controller (with deadband compensation)
+void BlueMotor::setEffortDBC(int8_t effort) {
+  // Constrain the effort
+  effort = constrain(effort, -100, 100);
+
+  // Check which direction the motor is moving
+  if (effort > 0) {
+    effort =
+        ((100 - RAISING_DEADBAND) * (int16_t)(effort)) / 100 + RAISING_DEADBAND;
+  } else {
+    effort = ((100 - LOWERING_DEADBAND) * (int16_t)(effort)) / 100 -
+             LOWERING_DEADBAND;
+  }
+
+  // Set the motor's effort
+  setEffort(effort);
 }
 
 /**

@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <BlueMotor.h>
+#include <Chassis.h>
 #include <Romi32U4.h>
 #include <RotaryGripper.h>
 
@@ -8,6 +9,7 @@
 #define ENCODER_TICKS_PER_REV 540  // ticks per revolution
 
 // Create the objects
+Chassis chassis;
 RotaryGripper gripper(A4, 223, 355, 10, 16, 140);
 BlueMotor motor(0, 1);
 Romi32U4ButtonA buttonA;
@@ -19,6 +21,10 @@ int32_t lastCount = 0;
 
 void setup() {
   // Setup code here
+
+  // Initialize the chassis
+  // ! MUST BE DONE FOR BLUE MOTOR TO WORK
+  chassis.init();
 
   // Initialize the gripper
   gripper.init();
@@ -41,6 +47,7 @@ void setup() {
 
 void loop() {
   // Repeating code here
+  /*
   if (buttonA.isPressed()) {
     motor.setEffort(MOTOR_EFFORT);
   } else if (buttonC.isPressed()) {
@@ -48,11 +55,34 @@ void loop() {
   } else {
     motor.setEffort(0);
   }
+  */
 
-  // Get the current encoder count
-  int32_t currentCount = motor.getPosition();
+  // Blue motor testing (only uncomment one at a time)
+  // Set these values in BlueMotor.h after testing
+  // Positive
+  for (int effort = 0; effort <= 100; effort += 1) {
+    motor.setEffort(effort);
+    uint32_t startTime = millis();
+    while (millis() - startTime < 1000) {
+      Serial.print("Effort: ");
+      Serial.print(effort);
+      Serial.print(", Count: ");
+      Serial.println(motor.getPosition());
+      delay(10);
+    }
+  }
 
-  // Print the encoder count
-  Serial.print("C: ");
-  Serial.println(currentCount);
+  // Negative
+  /*
+  for (int effort = 0; effort >= -100; effort -= 1) {
+    motor.setEffort(effort);
+    uint32_t startTime = millis();
+    while (millis() - startTime < 1000) {
+      Serial.print("Effort: ");
+      Serial.print(effort);
+      Serial.print(", Count: ");
+      Serial.println(motor.getPosition());
+      delay(10);
+    }
+  }*/
 }

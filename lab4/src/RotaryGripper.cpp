@@ -7,6 +7,7 @@
 #include <RotaryGripper.h>
 
 #define POSITION_TOLERANCE 5  // ADC values (0-1023)
+#define TIME_TOLERANCE 1000   // Ms before aborting closing the gripper
 // #define DEBUG
 
 /**
@@ -83,26 +84,32 @@ void RotaryGripper::setDesiredState(GripperState state) {
     // Move the motor to open the gripper
     setAngle(openServoAngle);
 
-    // Continuously check if the gripper is in place
-    while (abs(openPotVal - analogRead(feedbackPin)) > POSITION_TOLERANCE) {
-      // Do nothing
-#ifdef DEBUG
-      Serial.println(getAngle());
-#endif
-    }
   } else {
     // Move the motor to lock the gripper
     setAngle(lockedServoAngle);
 
+    // Record the time
+    uint32_t startTime = millis();
+    bool closeFailed = false;
+
     // Continuously check if the gripper is in place
     while (abs(closedPotVal - analogRead(feedbackPin)) > POSITION_TOLERANCE) {
-      // Do nothing
+      // Check if the gripper is stuck
+      if (millis() - startTime > TIME_TOLERANCE) {
+        // Open the gripper
+        setAngle(openServoAngle);
+        closeFailed = true;
+        break;
+      }
 #ifdef DEBUG
       Serial.println(getAngle());
 #endif
     }
 
-    // Back off on the motor to reduce the strain on the servo
-    setAngle(closedServoAngle);
+    // Allow the motor to relax if the gripper is not stuck
+    if (!closeFailed) {
+      // Back off on the motor to reduce the strain on the servo
+      setAngle(closedServoAngle);
+    }
   }
 }
