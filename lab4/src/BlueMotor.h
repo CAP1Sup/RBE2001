@@ -8,8 +8,8 @@
 // Motor settings
 #define DEFAULT_KP 0.5
 #define ENCODER_POS_TOLERANCE 10
-#define LOWERING_DEADBAND 10
-#define RAISING_DEADBAND 10
+#define LOWERING_DEADBAND 31
+#define RAISING_DEADBAND 45
 
 class BlueMotor {
  public:
@@ -24,6 +24,9 @@ class BlueMotor {
 
   // Set the effort of the motor (with deadband compensation)
   void setEffortDBC(int8_t effort);
+
+  // Calculates the corrected effort after deadband compensation
+  int8_t calculateDBCEffort(int8_t userEffort);
 
   // Move to a given encoder count
   void moveTo(int32_t position);

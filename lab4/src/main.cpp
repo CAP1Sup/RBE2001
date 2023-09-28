@@ -17,6 +17,7 @@ Romi32U4ButtonC buttonC;
 
 // Variables
 unsigned long lastTime = 0;
+int32_t currentCount = 0;
 int32_t lastCount = 0;
 
 void setup() {
@@ -43,11 +44,67 @@ void setup() {
 
   // Open the gripper
   gripper.setDesiredState(OPEN);
+
+  // Delay to allow user to get ready
+  //delay(5000);
+
+  // Blue motor testing (only uncomment one at a time)
+  // Set these values in BlueMotor.h after testing
+  // Positive
+  /*
+  for (int effort = 0; effort <= 100; effort += 1) {
+    motor.setEffortDBC(effort);
+    uint32_t startTime = millis();
+    while (millis() - startTime < 1000) {
+      Serial.print("Ms: ");
+      Serial.print(millis());
+      Serial.print(", User Effort: ");
+      Serial.print(effort*4);
+      //Serial.print(" Count: ");
+      //Serial.println(motor.getPosition());
+      Serial.print(", Adj Effort: ");
+      Serial.print(motor.calculateDBCEffort(effort)*4);
+      Serial.print(", Ang Spd: ");
+      currentCount = motor.getPosition();
+      // Calculate the encoder RPM
+      float rpm = (currentCount - lastCount) * 60000.0f / 100 /
+                540;
+      lastCount = currentCount;
+      Serial.println(rpm * 2 * 3.14 / 60);
+      
+      delay(100);
+    }
+  }*/
+
+  // Negative
+  /*
+  for (int effort = 0; effort >= -100; effort -= 1) {
+    motor.setEffortDBC(effort);
+    uint32_t startTime = millis();
+    while (millis() - startTime < 1000) {
+      Serial.print("Ms: ");
+      Serial.print(millis());
+      Serial.print(", User Effort: ");
+      Serial.print(effort*4);
+      //Serial.print(" Count: ");
+      //Serial.println(motor.getPosition());
+      Serial.print(", Adj Effort: ");
+      Serial.print(motor.calculateDBCEffort(effort)*4);
+      Serial.print(", Ang Spd: ");
+      currentCount = motor.getPosition();
+      // Calculate the encoder RPM
+      float rpm = (currentCount - lastCount) * 60000.0f / 100 /
+                540;
+      lastCount = currentCount;
+      Serial.println(rpm * 2 * 3.14 / 60);
+      
+      delay(100);
+    }
+  }*/
 }
 
 void loop() {
   // Repeating code here
-  /*
   if (buttonA.isPressed()) {
     motor.setEffort(MOTOR_EFFORT);
   } else if (buttonC.isPressed()) {
@@ -55,34 +112,4 @@ void loop() {
   } else {
     motor.setEffort(0);
   }
-  */
-
-  // Blue motor testing (only uncomment one at a time)
-  // Set these values in BlueMotor.h after testing
-  // Positive
-  for (int effort = 0; effort <= 100; effort += 1) {
-    motor.setEffort(effort);
-    uint32_t startTime = millis();
-    while (millis() - startTime < 1000) {
-      Serial.print("Effort: ");
-      Serial.print(effort);
-      Serial.print(", Count: ");
-      Serial.println(motor.getPosition());
-      delay(10);
-    }
-  }
-
-  // Negative
-  /*
-  for (int effort = 0; effort >= -100; effort -= 1) {
-    motor.setEffort(effort);
-    uint32_t startTime = millis();
-    while (millis() - startTime < 1000) {
-      Serial.print("Effort: ");
-      Serial.print(effort);
-      Serial.print(", Count: ");
-      Serial.println(motor.getPosition());
-      delay(10);
-    }
-  }*/
 }

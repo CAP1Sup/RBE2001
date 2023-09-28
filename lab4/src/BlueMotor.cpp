@@ -34,17 +34,21 @@ void BlueMotor::setEffortDBC(int8_t effort) {
   // Constrain the effort
   effort = constrain(effort, -100, 100);
 
-  // Check which direction the motor is moving
-  if (effort > 0) {
-    effort =
-        ((100 - RAISING_DEADBAND) * (int16_t)(effort)) / 100 + RAISING_DEADBAND;
-  } else {
-    effort = ((100 - LOWERING_DEADBAND) * (int16_t)(effort)) / 100 -
-             LOWERING_DEADBAND;
-  }
+  effort = calculateDBCEffort(effort);
 
   // Set the motor's effort
   setEffort(effort);
+}
+
+int8_t BlueMotor::calculateDBCEffort(int8_t userEffort) {
+  // Check which direction the motor is moving
+  if (userEffort >= 0) {
+    return
+        ((100 - RAISING_DEADBAND) * (int16_t)(userEffort)) / 100 + RAISING_DEADBAND;
+  } else {
+    return ((100 - LOWERING_DEADBAND) * (int16_t)(userEffort)) / 100 -
+             LOWERING_DEADBAND;
+  }
 }
 
 /**
