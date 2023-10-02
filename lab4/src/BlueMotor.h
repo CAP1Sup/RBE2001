@@ -7,9 +7,10 @@
 
 // Motor settings
 #define DEFAULT_KP 0.5
-#define ENCODER_POS_TOLERANCE 10
+#define ANGLE_TOLERANCE 1
 #define LOWERING_DEADBAND 31
 #define RAISING_DEADBAND 45
+#define DEBUG
 
 class BlueMotor {
  public:
@@ -28,14 +29,23 @@ class BlueMotor {
   // Calculates the corrected effort after deadband compensation
   int8_t calculateDBCEffort(int8_t userEffort);
 
-  // Move to a given encoder count
-  void moveTo(int32_t position);
+  // Move to a given 4 bar angle
+  void moveTo(float desiredAngle);
 
   // Get the encoder's count
   int32_t getPosition();
 
-  // Reset the encoder state
-  void resetPos();
+  // Set the encoder's count
+  void setPosition(int32_t encPos);
+
+  // Set the encoder conversion factor
+  void setDegToEncCount(float degToEncCount);
+
+  // Get the angle of the 4 bar
+  float getAngle();
+
+  // Set the angle of the 4 bar
+  void setAngle(float angle);
 
   // PID constant setters
   void setKp(float k) { pid.setKp(k); }
@@ -48,6 +58,10 @@ class BlueMotor {
 
   // Encoder object
   Encoder encoder;
+
+  // Encoder conversion factor
+  // Multiply degrees by this to get encoder counts
+  float degToEncCount = 1;
 
   // PID controller
   PIDController pid = PIDController(DEFAULT_KP);

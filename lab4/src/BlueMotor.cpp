@@ -16,14 +16,22 @@ void BlueMotor::init() {
   // Initialize the MC29's servo object
   servo.attach();
 
+  // Stop the motor
+  setEffort(0);
+
+  // Set the default PID constants
+  pid.setKp(DEFAULT_KP);
+  pid.setKi(0.0);
+  pid.setKd(0.0);
+
   // Reset the encoder count
-  resetPos();
+  setPosition(0);
 }
 
 // Set the effort of the motor controller
 void BlueMotor::setEffort(int8_t effort) {
   // Constrain the effort
-  effort = constrain(effort, -100, 100);
+  effort = constrain(effort, -99, 99);
 
   // Set the servo pulse
   servo.writeMicroseconds(1500 + effort * 5);
@@ -43,25 +51,46 @@ void BlueMotor::setEffortDBC(int8_t effort) {
 int8_t BlueMotor::calculateDBCEffort(int8_t userEffort) {
   // Check which direction the motor is moving
   if (userEffort >= 0) {
-    return
-        ((100 - RAISING_DEADBAND) * (int16_t)(userEffort)) / 100 + RAISING_DEADBAND;
+    return ((100 - RAISING_DEADBAND) * (int16_t)(userEffort)) / 100 +
+           RAISING_DEADBAND;
   } else {
     return ((100 - LOWERING_DEADBAND) * (int16_t)(userEffort)) / 100 -
-             LOWERING_DEADBAND;
+           LOWERING_DEADBAND;
   }
 }
 
 /**
- * @brief Move to a given encoder count
+ * @brief Move the 4 bar to a given angle
  *
- * @param position The encoder count to move to
- * @param effort Maximum effort to use (0-100)
+ * @param desiredAngle The angle to move to
  */
-void BlueMotor::moveTo(int32_t position) {
+void BlueMotor::moveTo(float desiredAngle) {
   // Wait until the desired encoder count is reached
-  while (abs(position - getPosition()) > ENCODER_POS_TOLERANCE) {
+  float currentAngle;
+  while (true) {
+    // Get the current angle
+    currentAngle = getAngle();
+
     // Keep setting the motor effort
-    setEffort(pid.calcEffort(position - getPosition()));
+    float effort = pid.calcEffort(desiredAngle - currentAngle);
+
+    // Constrain the effort
+    setEffort(constrain(effort, -100, 100));
+
+    // Check if it's time to exit the loop
+    if (abs(desiredAngle - currentAngle) < ANGLE_TOLERANCE) {
+      break;
+    }
+
+// Print out helpful info
+#ifdef DEBUG
+    Serial.print("Desired: ");
+    Serial.print(desiredAngle);
+    Serial.print(", Current: ");
+    Serial.print(currentAngle);
+    Serial.print(", Effort: ");
+    Serial.println(effort);
+#endif
 
     // Give a minor delay for the motor to move
     delay(10);
@@ -84,8 +113,27 @@ int32_t BlueMotor::getPosition() {
 /**
  * @brief Reset the encoder's position
  *
+ * @param encPos The position to set the encoder to
  */
-void BlueMotor::resetPos() {
-  // Reset the encoder count
-  encoder.resetPosition();
+void BlueMotor::setPosition(int32_t encPos) {
+  // Set the encoder's count
+  encoder.setPosition(encPos);
+}
+
+// Set the encoder conversion factor
+void BlueMotor::setDegToEncCount(float degToEncCount) {
+  // Set the conversion factor
+  this->degToEncCount = degToEncCount;
+}
+
+// Get the angle of the 4 bar (in degrees)
+float BlueMotor::getAngle() {
+  // Return the angle
+  return getPosition() / degToEncCount;
+}
+
+// Set the angle of the 4 bar
+void BlueMotor::setAngle(float angle) {
+  // Set the angle
+  setPosition(angle * degToEncCount);
 }

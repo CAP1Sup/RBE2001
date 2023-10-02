@@ -7,7 +7,7 @@
 #include <RotaryGripper.h>
 
 #define POSITION_TOLERANCE 5  // ADC values (0-1023)
-#define TIME_TOLERANCE 2000   // Ms before aborting closing the gripper
+#define TIME_TOLERANCE 1000   // Ms before aborting closing the gripper
 // #define DEBUG
 
 /**

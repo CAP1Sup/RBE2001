@@ -7,6 +7,13 @@
 #define MOTOR_EFFORT 50            // % of max effort
 #define ENCODER_SAMPLING_TIME 100  // ms
 #define ENCODER_TICKS_PER_REV 540  // ticks per revolution
+#define ENCODER_GEAR_RATIO 36      // gear ratio
+#define ENCODER_DEG_TO_TICK \
+  (ENCODER_TICKS_PER_REV / 360.0f * ENCODER_GEAR_RATIO)
+#define STAGING_PLATFORM_ANGLE -19.1    // deg
+#define HOUSE_45_DEG_PANEL_ANGLE 41.78  // deg
+#define HOUSE_25_DEG_PANEL_ANGLE 75.14  // deg
+#define CLEARANCE_ANGLE 70              // deg
 
 // Create the objects
 Chassis chassis;
@@ -36,6 +43,18 @@ void setup() {
   // Turn off the motor
   motor.setEffort(0);
 
+  // Set the motor's conversion rate
+  motor.setDegToEncCount(ENCODER_DEG_TO_TICK);
+
+  // Set the motor's current angle
+  // Should always be staging block
+  motor.setAngle(STAGING_PLATFORM_ANGLE);
+
+  // Set the motor's PID constants
+  motor.setKp(20.0);
+  motor.setKi(0.0);
+  motor.setKd(0.0);
+
   // Initialize serial and wait for connection
   Serial.begin(9600);
   while (!Serial) {
@@ -46,7 +65,7 @@ void setup() {
   gripper.setDesiredState(OPEN);
 
   // Delay to allow user to get ready
-  //delay(5000);
+  delay(5000);
 
   // Blue motor testing (only uncomment one at a time)
   // Set these values in BlueMotor.h after testing
@@ -71,7 +90,7 @@ void setup() {
                 540;
       lastCount = currentCount;
       Serial.println(rpm * 2 * 3.14 / 60);
-      
+
       delay(100);
     }
   }*/
@@ -97,13 +116,15 @@ void setup() {
                 540;
       lastCount = currentCount;
       Serial.println(rpm * 2 * 3.14 / 60);
-      
+
       delay(100);
     }
   }*/
 }
 
+// #define MANUAL_MOVE
 void loop() {
+#ifdef MANUAL_MOVE
   // Repeating code here
   if (buttonA.isPressed()) {
     motor.setEffort(MOTOR_EFFORT);
@@ -112,4 +133,19 @@ void loop() {
   } else {
     motor.setEffort(0);
   }
+#else
+
+  Serial.println("Moving to house 45 deg panel angle");
+  motor.moveTo(HOUSE_45_DEG_PANEL_ANGLE);
+  delay(2000);
+  Serial.println("Moving to house 25 deg panel angle");
+  motor.moveTo(HOUSE_25_DEG_PANEL_ANGLE);
+  delay(2000);
+  Serial.println("Moving to clearance angle");
+  motor.moveTo(CLEARANCE_ANGLE);
+  delay(2000);
+  Serial.println("Moving to staging platform angle");
+  motor.moveTo(STAGING_PLATFORM_ANGLE);
+  delay(4000);
+#endif
 }

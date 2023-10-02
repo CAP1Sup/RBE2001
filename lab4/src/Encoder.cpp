@@ -51,11 +51,15 @@ int32_t Encoder::getPosition() {
 }
 
 /**
- * @brief Resets the encoder position to 0
+ * @brief Sets the encoder position to the given value
+ *
+ * @param pos The position to set the encoder to
  */
-void Encoder::resetPosition() {
-  // Reset the position
-  position = 0;
+void Encoder::setPosition(int32_t pos) {
+  // Set the position
+  noInterrupts();
+  position = pos;
+  interrupts();
 }
 
 /**

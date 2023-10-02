@@ -7,7 +7,7 @@ class Encoder {
   Encoder();
   static void init(uint8_t pinA, uint8_t pinB);
   static int32_t getPosition();
-  static void resetPosition();
+  static void setPosition(int32_t pos);
   static void isrA();
   static void isrB();
 
