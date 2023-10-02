@@ -6,27 +6,14 @@
 
 #include <LinearGripper.h>
 
-#define POSITION_TOLERANCE 5  // ADC values (0-1023)
-#define SERVO_SPEED 100       // 0-100%
-#define SPEED_TOLERANCE 1     // Encoder counts must be over 5 / sampling period
-#define SPEED_SAMPLING_PERIOD 100  // ms
-// #define DEBUG
-
 /**
  * @brief Construct a new Linear Gripper:: Linear Gripper object
  *
  * @param feedbackPin The pin that the potentiometer is connected to
- * @param openPotVal The potentiometer reading when the gripper is open
- * @param closedPotVal The potentiometer reading when the gripper is closed
  */
-LinearGripper::LinearGripper(uint8_t feedbackPin, uint16_t openPotVal,
-                             uint16_t closedPotVal) {
+LinearGripper::LinearGripper(uint8_t feedbackPin) {
   // Save the feedback pin
   this->feedbackPin = feedbackPin;
-
-  // Save the bounds
-  this->openPotVal = openPotVal;
-  this->closedPotVal = closedPotVal;
 }
 
 /**
@@ -93,7 +80,7 @@ bool LinearGripper::setDesiredState(GripperState state, bool internalCall) {
     }
 
     // Check if the gripper is in place
-    if (getPosition() - openPotVal < POSITION_TOLERANCE) {
+    if (getPosition() - OPEN_POT_VAL < POSITION_TOLERANCE) {
       // Stop the motor if it is
       setSpeed(0);
 
@@ -139,7 +126,7 @@ bool LinearGripper::setDesiredState(GripperState state, bool internalCall) {
     }*/
 
     // Check if the gripper is in place
-    if (closedPotVal - getPosition() > POSITION_TOLERANCE) {
+    if (CLOSED_POT_VAL - getPosition() > POSITION_TOLERANCE) {
       // Stop the motor if it is
       setSpeed(0);
 

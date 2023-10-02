@@ -3,6 +3,13 @@
 #include <Arduino.h>
 #include <Servo32U4.h>
 
+// Compiler definitions
+#define CLOSED_POT_VAL 223     // ADC values (0-1023)
+#define OPEN_POT_VAL 355       // ADC values (0-1023)
+#define LOCKED_SERVO_ANGLE 10  // deg (0-180)
+#define CLOSED_SERVO_ANGLE 16  // deg (0-180)
+#define OPEN_SERVO_ANGLE 140   // deg (0-180)
+
 // Type definitions
 typedef enum { OPEN, CLOSED } GripperState;
 
@@ -15,9 +22,7 @@ typedef enum { OPEN, CLOSED } GripperState;
  */
 class RotaryGripper {
  public:
-  RotaryGripper(uint8_t feedbackPin, uint16_t closedPotVal, uint16_t openPotVal,
-                uint16_t lockedServoAngle, uint16_t closedServoAngle,
-                uint16_t openServoAngle);
+  RotaryGripper(uint8_t feedbackPin);
   void init();
   void setAngle(int angle);
   uint16_t getAngle();
@@ -26,11 +31,6 @@ class RotaryGripper {
  private:
   Servo32U4Pin5 servo;
   uint8_t feedbackPin;
-  uint16_t closedPotVal;
-  uint16_t openPotVal;
-  uint16_t lockedServoAngle;
-  uint16_t closedServoAngle;
-  uint16_t openServoAngle;
 };
 
 // Include the source file

@@ -4,12 +4,8 @@
 #include <Romi32U4.h>
 #include <RotaryGripper.h>
 
-#define MOTOR_EFFORT 50            // % of max effort
-#define ENCODER_SAMPLING_TIME 100  // ms
-#define ENCODER_TICKS_PER_REV 540  // ticks per revolution
-#define ENCODER_GEAR_RATIO 36      // gear ratio
-#define ENCODER_DEG_TO_TICK \
-  (ENCODER_TICKS_PER_REV / 360.0f * ENCODER_GEAR_RATIO)
+#define MOTOR_EFFORT 50                 // % of max effort
+#define ENCODER_SAMPLING_TIME 100       // ms
 #define STAGING_PLATFORM_ANGLE -19.1    // deg
 #define HOUSE_45_DEG_PANEL_ANGLE 41.78  // deg
 #define HOUSE_25_DEG_PANEL_ANGLE 75.14  // deg
@@ -17,7 +13,7 @@
 
 // Create the objects
 Chassis chassis;
-RotaryGripper gripper(A4, 223, 355, 10, 16, 140);
+RotaryGripper gripper(A4);
 BlueMotor motor(0, 1);
 Romi32U4ButtonA buttonA;
 Romi32U4ButtonC buttonC;

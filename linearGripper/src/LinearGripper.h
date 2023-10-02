@@ -3,6 +3,15 @@
 #include <Arduino.h>
 #include <Servo32U4.h>
 
+// Compiler definitions
+#define OPEN_POT_VAL 600
+#define CLOSED_POT_VAL 800
+#define POSITION_TOLERANCE 5  // ADC values (0-1023)
+#define SERVO_SPEED 100       // 0-100%
+#define SPEED_TOLERANCE 1     // Encoder counts must be over 5 / sampling period
+#define SPEED_SAMPLING_PERIOD 100  // ms
+// #define DEBUG
+
 // Type definitions
 typedef enum { OPEN, CLOSED, UNKNOWN } GripperState;
 
@@ -15,8 +24,7 @@ typedef enum { OPEN, CLOSED, UNKNOWN } GripperState;
  */
 class LinearGripper {
  public:
-  LinearGripper(uint8_t feedbackPin, uint16_t openPotVal,
-                uint16_t closedPotVal);
+  LinearGripper(uint8_t feedbackPin);
   void init();
   void setSpeed(int speed);
   uint16_t getPosition();
@@ -26,8 +34,6 @@ class LinearGripper {
   bool setDesiredState(GripperState state, bool internalCall);
   Servo32U4Pin5 servo;
   uint8_t feedbackPin;
-  uint16_t openPotVal;
-  uint16_t closedPotVal;
   bool isStuck = false;
   GripperState prevSetState = UNKNOWN;
   uint32_t potRateStartTime;

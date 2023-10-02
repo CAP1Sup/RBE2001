@@ -5,7 +5,7 @@
 #define POT_PIN A4
 
 // Create a gripper object
-LinearGripper gripper(POT_PIN, 600, 800);
+LinearGripper gripper(POT_PIN);
 
 void setup() {
   // Setup code here

@@ -120,20 +120,14 @@ void BlueMotor::setPosition(int32_t encPos) {
   encoder.setPosition(encPos);
 }
 
-// Set the encoder conversion factor
-void BlueMotor::setDegToEncCount(float degToEncCount) {
-  // Set the conversion factor
-  this->degToEncCount = degToEncCount;
-}
-
 // Get the angle of the 4 bar (in degrees)
 float BlueMotor::getAngle() {
   // Return the angle
-  return getPosition() / degToEncCount;
+  return getPosition() / ENCODER_DEG_TO_TICK;
 }
 
 // Set the angle of the 4 bar
 void BlueMotor::setAngle(float angle) {
   // Set the angle
-  setPosition(angle * degToEncCount);
+  setPosition(angle * ENCODER_DEG_TO_TICK);
 }
