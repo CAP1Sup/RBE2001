@@ -16,3 +16,6 @@ class Encoder {
   static uint8_t _pinB;
   static int32_t position;
 };
+
+// Include the source file
+#include "Encoder.cpp"

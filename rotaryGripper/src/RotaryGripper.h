@@ -32,3 +32,6 @@ class RotaryGripper {
   uint16_t closedServoAngle;
   uint16_t openServoAngle;
 };
+
+// Include the source file
+#include <RotaryGripper.cpp>

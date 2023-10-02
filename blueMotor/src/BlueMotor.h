@@ -66,3 +66,6 @@ class BlueMotor {
   // PID controller
   PIDController pid = PIDController(DEFAULT_KP);
 };
+
+// Include the source file
+#include "BlueMotor.cpp"
