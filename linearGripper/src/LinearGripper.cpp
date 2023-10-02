@@ -8,8 +8,8 @@
 
 #define POSITION_TOLERANCE 5  // ADC values (0-1023)
 #define SERVO_SPEED 50        // 0-100%
-#define TIME_TOLERANCE 2000   // Ms before aborting closing the gripper
-// #define DEBUG
+#define TIME_TOLERANCE 30000  // Ms before aborting closing the gripper
+#define DEBUG
 
 /**
  * @brief Construct a new Linear Gripper:: Linear Gripper object
@@ -39,6 +39,9 @@ void LinearGripper::init() {
 
   // Perform an analogRead to initialize the ADC
   analogRead(feedbackPin);
+
+  // Set the speed of the motor to 0
+  setSpeed(0);
 
 #ifdef DEBUG
   Serial.begin(9600);
@@ -72,7 +75,7 @@ void LinearGripper::setDesiredState(GripperState state) {
     setSpeed(-SERVO_SPEED);
 
     // Continuously check if the gripper is in place
-    while (abs(openPotVal - getPosition()) > POSITION_TOLERANCE) {
+    while (getPosition() - openPotVal > POSITION_TOLERANCE) {
       // Do nothing
 #ifdef DEBUG
       Serial.println(getPosition());
@@ -89,7 +92,7 @@ void LinearGripper::setDesiredState(GripperState state) {
     uint32_t startTime = millis();
 
     // Continuously check if the gripper is in place
-    while (abs(closedPotVal - getPosition()) > POSITION_TOLERANCE) {
+    while (closedPotVal - getPosition() > POSITION_TOLERANCE) {
       // Check if the gripper is stuck
       if (millis() - startTime > TIME_TOLERANCE) {
         // Open the gripper
