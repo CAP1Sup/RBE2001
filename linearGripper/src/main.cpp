@@ -5,7 +5,7 @@
 #define POT_PIN A4
 
 // Create a gripper object
-LinearGripper gripper(POT_PIN, 700, 800);
+LinearGripper gripper(POT_PIN, 600, 800);
 
 void setup() {
   // Setup code here
@@ -17,7 +17,7 @@ void setup() {
   gripper.init();
 
   Serial.println("Gripper initialized, waiting for calibration");
-  delay(10000);
+  delay(3000);
 }
 
 void loop() {
@@ -25,9 +25,11 @@ void loop() {
   // Serial.print("Gripper position: ");
   // Serial.println(gripper.getPosition());
   Serial.println("Opening gripper");
-  // gripper.setDesiredState(OPEN);
+  while (!gripper.setDesiredState(OPEN))
+    ;
   delay(3000);
   Serial.println("Closing gripper");
-  // gripper.setDesiredState(CLOSED);
+  while (!gripper.setDesiredState(CLOSED))
+    ;
   delay(3000);
 }

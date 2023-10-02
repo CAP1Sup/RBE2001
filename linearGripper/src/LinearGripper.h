@@ -4,7 +4,7 @@
 #include <Servo32U4.h>
 
 // Type definitions
-typedef enum { OPEN, CLOSED } GripperState;
+typedef enum { OPEN, CLOSED, UNKNOWN } GripperState;
 
 /**
  * @brief Class to control the rotary gripper.
@@ -20,11 +20,16 @@ class LinearGripper {
   void init();
   void setSpeed(int speed);
   uint16_t getPosition();
-  void setDesiredState(GripperState state);
+  bool setDesiredState(GripperState state);
 
  private:
+  bool setDesiredState(GripperState state, bool internalCall);
   Servo32U4Pin5 servo;
   uint8_t feedbackPin;
   uint16_t openPotVal;
   uint16_t closedPotVal;
+  bool isStuck = false;
+  GripperState prevSetState = UNKNOWN;
+  uint32_t potRateStartTime;
+  uint16_t prevPotPos;
 };

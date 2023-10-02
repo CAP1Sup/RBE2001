@@ -7,9 +7,10 @@
 #include <LinearGripper.h>
 
 #define POSITION_TOLERANCE 5  // ADC values (0-1023)
-#define SERVO_SPEED 50        // 0-100%
-#define TIME_TOLERANCE 30000  // Ms before aborting closing the gripper
-#define DEBUG
+#define SERVO_SPEED 100       // 0-100%
+#define SPEED_TOLERANCE 1     // Encoder counts must be over 5 / sampling period
+#define SPEED_SAMPLING_PERIOD 100  // ms
+// #define DEBUG
 
 /**
  * @brief Construct a new Linear Gripper:: Linear Gripper object
@@ -68,43 +69,95 @@ uint16_t LinearGripper::getPosition() { return analogRead(feedbackPin); }
  * @brief Sets the desired state of the gripper
  *
  * @param state The desired state of the gripper
+ *
+ * @return true if the gripper successfully reached the desired state
  */
-void LinearGripper::setDesiredState(GripperState state) {
+bool LinearGripper::setDesiredState(GripperState state) {
+  return setDesiredState(state, false);
+}
+
+/**
+ * @brief Sets the desired state of the gripper
+ *
+ * @param state The desired state of the gripper
+ * @param internalCall Whether or not this is an internal call
+ *
+ * @return true if the gripper successfully reached the desired state
+ */
+bool LinearGripper::setDesiredState(GripperState state, bool internalCall) {
   if (state == OPEN) {
-    // Move the motor to open the gripper
-    setSpeed(-SERVO_SPEED);
-
-    // Continuously check if the gripper is in place
-    while (getPosition() - openPotVal > POSITION_TOLERANCE) {
-      // Do nothing
-#ifdef DEBUG
-      Serial.println(getPosition());
-#endif
+    // Check if the gripper has just started opening
+    if (prevSetState != OPEN) {
+      // Move the motor to open the gripper
+      setSpeed(-SERVO_SPEED);
     }
 
-    // Stop the motor
-    setSpeed(0);
-  } else {
-    // Move the motor to lock the gripper
-    setSpeed(SERVO_SPEED);
+    // Check if the gripper is in place
+    if (getPosition() - openPotVal < POSITION_TOLERANCE) {
+      // Stop the motor if it is
+      setSpeed(0);
 
-    // Record the time
-    uint32_t startTime = millis();
+      // Return true
+      return true;
+    }
+  } else {  // state == CLOSED
 
-    // Continuously check if the gripper is in place
-    while (closedPotVal - getPosition() > POSITION_TOLERANCE) {
+    // Check if the gripper has just started closing
+    if (prevSetState != CLOSED) {
+      // Reset the stuck flag
+      isStuck = false;
+
+      // Reset the start time
+      potRateStartTime = millis();
+
+      // Reset the previous potentiometer position
+      prevPotPos = getPosition();
+
+      // Move the motor to lock the gripper
+      setSpeed(SERVO_SPEED);
+    }
+
+    // Open the gripper if it is stuck
+    /*if (isStuck) {
+      // Open the gripper
+      return setDesiredState(OPEN, true);
+    }*/
+
+    // Check if the gripper is stuck
+    /*if (millis() - potRateStartTime > SPEED_SAMPLING_PERIOD) {
       // Check if the gripper is stuck
-      if (millis() - startTime > TIME_TOLERANCE) {
-        // Open the gripper
-        setDesiredState(OPEN);
-        break;
-      }
-#ifdef DEBUG
-      Serial.println(getPosition());
-#endif
-    }
+      if (abs(getPosition() - prevPotPos) < SPEED_TOLERANCE) {
+        // Set the stuck flag
+        isStuck = true;
+      } else {
+        // Reset the start time
+        potRateStartTime = millis();
 
-    // Stop the motor
-    setSpeed(0);
+        // Save the current encoder rate
+        prevPotPos = getPosition();
+      }
+    }*/
+
+    // Check if the gripper is in place
+    if (closedPotVal - getPosition() > POSITION_TOLERANCE) {
+      // Stop the motor if it is
+      setSpeed(0);
+
+      // Return true
+      return true;
+    }
   }
+
+  // Don't update the previous set state if this is an internal call
+  if (!internalCall) {
+    // Save the last set state
+    prevSetState = state;
+  }
+
+#ifdef DEBUG
+  Serial.println(getPosition());
+#endif
+
+  // If we've made it this far, the gripper is not in place
+  return false;
 }
