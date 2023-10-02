@@ -39,9 +39,6 @@ void setup() {
   // Turn off the motor
   motor.setEffort(0);
 
-  // Set the motor's conversion rate
-  motor.setDegToEncCount(ENCODER_DEG_TO_TICK);
-
   // Set the motor's current angle
   // Should always be staging block
   motor.setAngle(STAGING_PLATFORM_ANGLE);
@@ -52,16 +49,16 @@ void setup() {
   motor.setKd(0.0);
 
   // Initialize serial and wait for connection
-  Serial.begin(9600);
-  while (!Serial) {
-    delay(10);
-  }
+  // Serial.begin(9600);
+  // while (!Serial) {
+  //  delay(10);
+  //}
 
   // Open the gripper
   gripper.setDesiredState(OPEN);
 
   // Delay to allow user to get ready
-  delay(5000);
+  delay(2000);
 
   // Blue motor testing (only uncomment one at a time)
   // Set these values in BlueMotor.h after testing
@@ -131,17 +128,9 @@ void loop() {
   }
 #else
 
-  Serial.println("Moving to house 45 deg panel angle");
-  motor.moveTo(HOUSE_45_DEG_PANEL_ANGLE);
-  delay(2000);
-  Serial.println("Moving to house 25 deg panel angle");
-  motor.moveTo(HOUSE_25_DEG_PANEL_ANGLE);
-  delay(2000);
-  Serial.println("Moving to clearance angle");
-  motor.moveTo(CLEARANCE_ANGLE);
-  delay(2000);
-  Serial.println("Moving to staging platform angle");
-  motor.moveTo(STAGING_PLATFORM_ANGLE);
-  delay(4000);
+  // Close the gripper and wait for confirmation
+  while (!gripper.setDesiredState(CLOSED))
+    ;
+
 #endif
 }

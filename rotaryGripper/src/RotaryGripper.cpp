@@ -1,9 +1,3 @@
-/**
- * @file RotaryGripper.cpp
- * @brief This file contains the implementation of the RotaryGripper class,
- * which controls a servo motor and a potentiometer to open and close a gripper.
- */
-
 #include "RotaryGripper.h"
 
 #define POSITION_TOLERANCE 5  // ADC values (0-1023)
@@ -58,38 +52,56 @@ uint16_t RotaryGripper::getAngle() { return analogRead(feedbackPin); }
  * @brief Sets the desired state of the gripper
  *
  * @param state The desired state of the gripper
+ *
+ * @return true If the gripper was successfully set to the desired state
  */
-void RotaryGripper::setDesiredState(GripperState state) {
+bool RotaryGripper::setDesiredState(GripperState state) {
+#ifdef DEBUG
+  Serial.println(getAngle());
+#endif
   if (state == OPEN) {
-    // Move the motor to open the gripper
-    setAngle(OPEN_SERVO_ANGLE);
+    if (prevSetState != OPEN) {
+      // Move the motor to open the gripper
+      setAngle(OPEN_SERVO_ANGLE);
+
+      // Record the time
+      lastSetTime = millis();
+    }
+
+    // Update the previous state
+    prevSetState = state;
+
+    // Return if the move has finished
+    return (millis() - lastSetTime > OPENING_TIME);
 
   } else {
-    // Move the motor to lock the gripper
-    setAngle(LOCKED_SERVO_ANGLE);
-
-    // Record the time
-    uint32_t startTime = millis();
-    bool closeFailed = false;
-
-    // Continuously check if the gripper is in place
-    while (abs(CLOSED_POT_VAL - analogRead(feedbackPin)) > POSITION_TOLERANCE) {
-      // Check if the gripper is stuck
-      if (millis() - startTime > TIME_TOLERANCE) {
-        // Open the gripper
-        setAngle(OPEN_SERVO_ANGLE);
-        closeFailed = true;
-        break;
-      }
-#ifdef DEBUG
-      Serial.println(getAngle());
-#endif
-    }
-
-    // Allow the motor to relax if the gripper is not stuck
-    if (!closeFailed) {
-      // Back off on the motor to reduce the strain on the servo
+    if (prevSetState != CLOSED) {
+      // Move the motor to close the gripper
       setAngle(CLOSED_SERVO_ANGLE);
+
+      // Record the time
+      lastSetTime = millis();
+      closeFailed = false;
     }
+
+    // Check if the gripper is in place
+    if (CLOSED_POT_VAL - analogRead(feedbackPin) > -POSITION_TOLERANCE) {
+      // Gripper finished moving
+      setAngle(LOCKED_SERVO_ANGLE);
+      return true;
+    }
+
+    // Check if the gripper is stuck
+    if (millis() - lastSetTime > TIME_TOLERANCE) {
+      // Open the gripper
+      setAngle(OPEN_SERVO_ANGLE);
+      closeFailed = true;
+    }
+
+    // Update the previous state
+    prevSetState = state;
+
+    // Return false, the gripper is not in place
+    return false;
   }
 }

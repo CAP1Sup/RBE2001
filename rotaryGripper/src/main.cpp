@@ -20,9 +20,11 @@ void setup() {
 void loop() {
   // Repeating code here
   Serial.println("Opening gripper");
-  gripper.setDesiredState(OPEN);
+  while (!gripper.setDesiredState(OPEN))
+    ;
   delay(1500);
   Serial.println("Closing gripper");
-  gripper.setDesiredState(CLOSED);
+  while (!gripper.setDesiredState(CLOSED))
+    ;
   delay(3000);
 }
