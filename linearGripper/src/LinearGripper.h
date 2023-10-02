@@ -39,3 +39,6 @@ class LinearGripper {
   uint32_t potRateStartTime;
   uint16_t prevPotPos;
 };
+
+// Include the source file
+#include "LinearGripper.cpp"
