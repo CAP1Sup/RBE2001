@@ -1,9 +1,5 @@
 #include "RotaryGripper.h"
 
-#define POSITION_TOLERANCE 5  // ADC values (0-1023)
-#define TIME_TOLERANCE 1000   // Ms before aborting closing the gripper
-// #define DEBUG
-
 /**
  * @brief Construct a new Rotary Gripper:: Rotary Gripper object
  *
@@ -72,7 +68,12 @@ bool RotaryGripper::setDesiredState(GripperState state) {
     prevSetState = state;
 
     // Return if the move has finished
-    return (millis() - lastSetTime > OPENING_TIME);
+    if (millis() - lastSetTime > OPENING_TIME) {
+      currentState = OPEN;
+      return true;
+    } else {
+      return false;
+    }
 
   } else {
     if (prevSetState != CLOSED) {
@@ -84,24 +85,44 @@ bool RotaryGripper::setDesiredState(GripperState state) {
       closeFailed = false;
     }
 
-    // Check if the gripper is in place
-    if (CLOSED_POT_VAL - analogRead(feedbackPin) > -POSITION_TOLERANCE) {
-      // Gripper finished moving
-      setAngle(LOCKED_SERVO_ANGLE);
-      return true;
+    // Make sure that the close didn't fail
+    if (!closeFailed) {
+      // Check if the gripper is in place
+      if (CLOSED_POT_VAL - analogRead(feedbackPin) > -POSITION_TOLERANCE) {
+        // Gripper finished moving
+        setAngle(LOCKED_SERVO_ANGLE);
+        currentState = CLOSED;
+        return true;
+      }
+
+      // Check if the gripper is stuck
+      if (millis() - lastSetTime > TIME_TOLERANCE) {
+        // Open the gripper
+        setAngle(OPEN_SERVO_ANGLE);
+        lastSetTime = millis();
+        closeFailed = true;
+      }
+
+      // Update the previous state
+      prevSetState = state;
+
+      // Return false, the gripper is not in place
+      return false;
+    } else {  // Gripper is stuck, wait for it open
+      if (millis() - lastSetTime > OPENING_TIME) {
+        currentState = OPEN;
+        return true;
+      } else {
+        return false;
+      }
     }
-
-    // Check if the gripper is stuck
-    if (millis() - lastSetTime > TIME_TOLERANCE) {
-      // Open the gripper
-      setAngle(OPEN_SERVO_ANGLE);
-      closeFailed = true;
-    }
-
-    // Update the previous state
-    prevSetState = state;
-
-    // Return false, the gripper is not in place
-    return false;
   }
 }
+
+/**
+ * @brief Gets the current state of the gripper
+ * Only valid after setDesiredState() returns true
+ *
+ * @return GripperState The current state of the gripper
+ */
+GripperState RotaryGripper::getCurrentState() { return currentState; }

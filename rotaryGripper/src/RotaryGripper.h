@@ -10,6 +10,9 @@
 #define LOCKED_SERVO_ANGLE 16  // deg (0-180)
 #define OPEN_SERVO_ANGLE 140   // deg (0-180)
 #define OPENING_TIME 500       // ms
+#define POSITION_TOLERANCE 5   // ADC values (0-1023)
+#define TIME_TOLERANCE 1500    // Ms before aborting closing the gripper
+// #define DEBUG
 
 // Type definitions
 typedef enum { OPEN, CLOSED, UNKNOWN } GripperState;
@@ -28,11 +31,13 @@ class RotaryGripper {
   void setAngle(int angle);
   uint16_t getAngle();
   bool setDesiredState(GripperState state);
+  GripperState getCurrentState();
 
  private:
   Servo32U4Pin5 servo;
   uint8_t feedbackPin;
   GripperState prevSetState = UNKNOWN;
+  GripperState currentState = UNKNOWN;
   uint32_t lastSetTime;
   bool closeFailed = false;
 };

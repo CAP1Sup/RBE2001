@@ -22,9 +22,13 @@ void loop() {
   Serial.println("Opening gripper");
   while (!gripper.setDesiredState(OPEN))
     ;
+  Serial.print("Gripper state: ");
+  Serial.println(gripper.getCurrentState());
   delay(1500);
   Serial.println("Closing gripper");
   while (!gripper.setDesiredState(CLOSED))
     ;
+  Serial.print("Gripper state: ");
+  Serial.println(gripper.getCurrentState());
   delay(3000);
 }
