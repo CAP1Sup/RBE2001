@@ -11,6 +11,9 @@
 #define HOUSE_25_DEG_PANEL_ANGLE 75.14  // deg
 #define CLEARANCE_ANGLE 70              // deg
 
+// #define MANUAL_MOVE
+// #define PID_TESTING
+
 // Create the objects
 Chassis chassis;
 RotaryGripper gripper(A4);
@@ -22,6 +25,12 @@ Romi32U4ButtonC buttonC;
 unsigned long lastTime = 0;
 int32_t currentCount = 0;
 int32_t lastCount = 0;
+
+// Convenience function
+void waitForButtonA() {
+  while (!buttonA.isPressed())
+    ;
+}
 
 void setup() {
   // Setup code here
@@ -44,9 +53,9 @@ void setup() {
   motor.setAngle(STAGING_PLATFORM_ANGLE);
 
   // Set the motor's PID constants
-  motor.setKp(20.0);
-  motor.setKi(0.0);
-  motor.setKd(0.0);
+  motor.setKp(15);
+  motor.setKi(0);
+  motor.setKd(2500);
 
   // Initialize serial and wait for connection
   // Serial.begin(9600);
@@ -57,8 +66,39 @@ void setup() {
   // Open the gripper
   gripper.setDesiredState(OPEN);
 
-  // Delay to allow user to get ready
-  delay(2000);
+#if !(defined(MANUAL_MOVE) || defined(PID_TESTING))
+  // 4 bar testing code
+  waitForButtonA();
+  while (!gripper.setDesiredState(CLOSED))
+    ;
+  waitForButtonA();
+  while (!motor.moveTo(CLEARANCE_ANGLE))
+    ;
+  waitForButtonA();
+  while (!motor.moveTo(HOUSE_45_DEG_PANEL_ANGLE))
+    ;
+  waitForButtonA();
+  while (!gripper.setDesiredState(OPEN))
+    ;
+  waitForButtonA();
+  while (!motor.moveTo(STAGING_PLATFORM_ANGLE))
+    ;
+  waitForButtonA();
+  while (!gripper.setDesiredState(CLOSED))
+    ;
+  waitForButtonA();
+  while (!motor.moveTo(CLEARANCE_ANGLE))
+    ;
+  waitForButtonA();
+  while (!motor.moveTo(HOUSE_25_DEG_PANEL_ANGLE))
+    ;
+  waitForButtonA();
+  while (!gripper.setDesiredState(OPEN))
+    ;
+  waitForButtonA();
+  while (!motor.moveTo(STAGING_PLATFORM_ANGLE))
+    ;
+#endif
 
   // Blue motor testing (only uncomment one at a time)
   // Set these values in BlueMotor.h after testing
@@ -115,7 +155,6 @@ void setup() {
   }*/
 }
 
-// #define MANUAL_MOVE
 void loop() {
 #ifdef MANUAL_MOVE
   // Repeating code here
@@ -126,11 +165,13 @@ void loop() {
   } else {
     motor.setEffort(0);
   }
-#else
-
-  // Close the gripper and wait for confirmation
-  while (!gripper.setDesiredState(CLOSED))
+#elif defined(PID_TESTING)
+  // Move the motor back and forth between the staging and clearance positions
+  while (!motor.moveTo(CLEARANCE_ANGLE))
     ;
-
+  delay(2000);
+  while (!motor.moveTo(STAGING_PLATFORM_ANGLE))
+    ;
+  delay(2000);
 #endif
 }

@@ -14,7 +14,7 @@
 #define ENCODER_GEAR_RATIO 36      // gear ratio
 #define ENCODER_DEG_TO_TICK \
   (ENCODER_TICKS_PER_REV / 360.0f * ENCODER_GEAR_RATIO)
-#define DEBUG
+// #define DEBUG
 
 class BlueMotor {
  public:
@@ -34,7 +34,7 @@ class BlueMotor {
   int8_t calculateDBCEffort(int8_t userEffort);
 
   // Move to a given 4 bar angle
-  void moveTo(float desiredAngle);
+  bool moveTo(float desiredAngle);
 
   // Get the encoder's count
   int32_t getPosition();
@@ -60,9 +60,8 @@ class BlueMotor {
   // Encoder object
   Encoder encoder;
 
-  // Encoder conversion factor
-  // Multiply degrees by this to get encoder counts
-  float degToEncCount = 1;
+  // Current angle of the 4 bar
+  float currentAngle;
 
   // PID controller
   PIDController pid = PIDController(DEFAULT_KP);

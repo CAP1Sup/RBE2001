@@ -63,26 +63,27 @@ int8_t BlueMotor::calculateDBCEffort(int8_t userEffort) {
  * @brief Move the 4 bar to a given angle
  *
  * @param desiredAngle The angle to move to
+ * @return true If the angle was reached
  */
-void BlueMotor::moveTo(float desiredAngle) {
-  // Wait until the desired encoder count is reached
-  float currentAngle;
-  while (true) {
-    // Get the current angle
-    currentAngle = getAngle();
+bool BlueMotor::moveTo(float desiredAngle) {
+  // Get the current angle
+  currentAngle = getAngle();
 
+  // Check if the motor has reached the desired angle
+  if (abs(desiredAngle - currentAngle) < ANGLE_TOLERANCE) {
+    // Stop the motor
+    setEffort(0);
+    return true;
+  } else {
     // Keep setting the motor effort
     float effort = pid.calcEffort(desiredAngle - currentAngle);
 
     // Constrain the effort
-    setEffort(constrain(effort, -100, 100));
+    // Effort must be constrained before because int8_t can't hold all of the
+    // float values
+    setEffortDBC(constrain(effort, -100, 100));
 
-    // Check if it's time to exit the loop
-    if (abs(desiredAngle - currentAngle) < ANGLE_TOLERANCE) {
-      break;
-    }
-
-// Print out helpful info
+    // Print out helpful info
 #ifdef DEBUG
     Serial.print("Desired: ");
     Serial.print(desiredAngle);
@@ -92,12 +93,9 @@ void BlueMotor::moveTo(float desiredAngle) {
     Serial.println(effort);
 #endif
 
-    // Give a minor delay for the motor to move
-    delay(10);
+    // Move isn't finished
+    return false;
   }
-
-  // Stop the motor
-  setEffort(0);
 }
 
 /**
