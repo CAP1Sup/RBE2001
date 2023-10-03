@@ -87,7 +87,7 @@ bool RotaryGripper::setDesiredState(GripperState state) {
 
     // Make sure that the close didn't fail
     if (!closeFailed) {
-      // Check if the gripper is in place
+      // Check if the gripper is closed
       if (CLOSED_POT_VAL - analogRead(feedbackPin) > -POSITION_TOLERANCE) {
         // Gripper finished moving
         setAngle(LOCKED_SERVO_ANGLE);
@@ -97,7 +97,7 @@ bool RotaryGripper::setDesiredState(GripperState state) {
 
       // Check if the gripper is stuck
       if (millis() - lastSetTime > TIME_TOLERANCE) {
-        // Open the gripper
+        // Gripper is stuck, open the it
         setAngle(OPEN_SERVO_ANGLE);
         lastSetTime = millis();
         closeFailed = true;
