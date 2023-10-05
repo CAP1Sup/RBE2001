@@ -13,6 +13,7 @@
 
 // #define MANUAL_MOVE
 // #define PID_TESTING
+#define MOTOR_DB_TESTING
 
 // Create the objects
 Chassis chassis;
@@ -23,8 +24,8 @@ Romi32U4ButtonC buttonC;
 
 // Variables
 unsigned long lastTime = 0;
-int32_t currentCount = 0;
-int32_t lastCount = 0;
+float currentAngle;
+float lastAngle = 0;
 
 // Convenience function
 void waitForButtonA() {
@@ -48,9 +49,13 @@ void setup() {
   // Turn off the motor
   motor.setEffort(0);
 
-  // Set the motor's current angle
-  // Should always be staging block
+// Set the motor's current angle
+// Should always be staging block
+#ifdef MOTOR_DB_TESTING
+  motor.setAngle(0);
+#else
   motor.setAngle(STAGING_PLATFORM_ANGLE);
+#endif
 
   // Set the motor's PID constants
   motor.setKp(15);
@@ -58,15 +63,17 @@ void setup() {
   motor.setKd(2500);
 
   // Initialize serial and wait for connection
-  // Serial.begin(9600);
-  // while (!Serial) {
-  //  delay(10);
-  //}
+#ifdef MOTOR_DB_TESTING
+  Serial.begin(9600);
+  while (!Serial) {
+    delay(10);
+  }
+#endif
 
   // Open the gripper
   gripper.setDesiredState(OPEN);
 
-#if !(defined(MANUAL_MOVE) || defined(PID_TESTING))
+#if !(defined(MANUAL_MOVE) || defined(PID_TESTING) || defined(MOTOR_DB_TESTING))
   // 4 bar testing code
   waitForButtonA();
   while (!gripper.setDesiredState(CLOSED))
@@ -100,59 +107,51 @@ void setup() {
     ;
 #endif
 
-  // Blue motor testing (only uncomment one at a time)
-  // Set these values in BlueMotor.h after testing
+#ifdef MOTOR_DB_TESTING
   // Positive
-  /*
+  Serial.println("Checking positive values");
   for (int effort = 0; effort <= 100; effort += 1) {
     motor.setEffortDBC(effort);
     uint32_t startTime = millis();
-    while (millis() - startTime < 1000) {
-      Serial.print("Ms: ");
-      Serial.print(millis());
-      Serial.print(", User Effort: ");
-      Serial.print(effort*4);
-      //Serial.print(" Count: ");
-      //Serial.println(motor.getPosition());
-      Serial.print(", Adj Effort: ");
-      Serial.print(motor.calculateDBCEffort(effort)*4);
-      Serial.print(", Ang Spd: ");
-      currentCount = motor.getPosition();
-      // Calculate the encoder RPM
-      float rpm = (currentCount - lastCount) * 60000.0f / 100 /
-                540;
-      lastCount = currentCount;
-      Serial.println(rpm * 2 * 3.14 / 60);
-
-      delay(100);
-    }
-  }*/
+    while (millis() - startTime < 1000)
+      ;
+    Serial.print("Ms: ");
+    Serial.print(millis());
+    Serial.print(", User Effort: ");
+    Serial.print(effort * 4);
+    // Serial.print(" Count: ");
+    // Serial.println(motor.getPosition());
+    Serial.print(", Adj Effort: ");
+    Serial.print(motor.calculateDBCEffort(effort) * 4);
+    Serial.print(", Ang Spd (RPM): ");
+    currentAngle = motor.getAngle();
+    // Calculate the encoder RPM
+    Serial.println((currentAngle - lastAngle) / 360 * 2 * 3.14 * 60);
+    lastAngle = currentAngle;
+  }
 
   // Negative
-  /*
+  Serial.println("Checking negative values");
   for (int effort = 0; effort >= -100; effort -= 1) {
     motor.setEffortDBC(effort);
     uint32_t startTime = millis();
-    while (millis() - startTime < 1000) {
-      Serial.print("Ms: ");
-      Serial.print(millis());
-      Serial.print(", User Effort: ");
-      Serial.print(effort*4);
-      //Serial.print(" Count: ");
-      //Serial.println(motor.getPosition());
-      Serial.print(", Adj Effort: ");
-      Serial.print(motor.calculateDBCEffort(effort)*4);
-      Serial.print(", Ang Spd: ");
-      currentCount = motor.getPosition();
-      // Calculate the encoder RPM
-      float rpm = (currentCount - lastCount) * 60000.0f / 100 /
-                540;
-      lastCount = currentCount;
-      Serial.println(rpm * 2 * 3.14 / 60);
-
-      delay(100);
-    }
-  }*/
+    while (millis() - startTime < 1000)
+      ;
+    Serial.print("Ms: ");
+    Serial.print(millis());
+    Serial.print(", User Effort: ");
+    Serial.print(effort * 4);
+    // Serial.print(" Count: ");
+    // Serial.println(motor.getPosition());
+    Serial.print(", Adj Effort: ");
+    Serial.print(motor.calculateDBCEffort(effort) * 4);
+    Serial.print(", Ang Spd (RPM): ");
+    currentAngle = motor.getAngle();
+    // Calculate the encoder RPM
+    Serial.println((currentAngle - lastAngle) / 360 * 2 * 3.14 * 60);
+    lastAngle = currentAngle;
+  }
+#endif
 }
 
 void loop() {
