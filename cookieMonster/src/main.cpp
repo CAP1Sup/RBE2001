@@ -25,6 +25,9 @@
 #define HOUSE_25_DEG_PANEL_ANGLE 75.14  // deg
 #define CLEARANCE_ANGLE 70              // deg
 
+// IR Codes
+#define E_STOP REMOTE_VOL_MINUS
+
 // Conversions
 #define INCHES_TO_CM 2.54
 
@@ -306,13 +309,22 @@ void processIRPress() {
   // Get the key code
   int16_t keyCode = irProcessor.getKeyCode();
 
-  /*
-    // Check if the code is valid
-    if (keyCode == -1) {
-      // Invalid code
-      return;
-    }*/
+  // Check if the code is valid
+  if (keyCode == -1) {
+    // Invalid code
+    return;
+  }
 
   // TODO: Process the code
-  irCode = keyCode;
+
+  // Stop the motor if the e-stop button is pressed
+  if (keyCode == E_STOP) {
+    if (motor.isOverridden()) {
+      motor.clearOverride();
+    } else {
+      motor.setOverride();
+    }
+  } else {
+    irCode = keyCode;
+  }
 }

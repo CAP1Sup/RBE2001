@@ -30,8 +30,17 @@ void BlueMotor::init() {
 
 // Set the effort of the motor controller
 void BlueMotor::setEffort(int8_t effort) {
+  // Stop execution if the override is active
+  while (override)
+    ;
+
   // Constrain the effort
+  // Constrain between -99 and 99 because
+  // motor controller will disable if effort is 100
   effort = constrain(effort, -99, 99);
+
+  // Set the last effort
+  lastEffort = effort;
 
   // Set the servo pulse
   servo.writeMicroseconds(1500 + effort * 5);
@@ -128,4 +137,47 @@ float BlueMotor::getAngle() {
 void BlueMotor::setAngle(float angle) {
   // Set the angle
   setPosition(angle * ENCODER_DEG_TO_TICK);
+}
+
+// Override functions
+// Called by the remote
+// REGULAR SET EFFORT CALLS WILL NOT WORK WHILE OVERRIDE IS ACTIVE
+// THEY WILL CALL INFINITE LOOPS
+
+/**
+ * @brief Stops the motor and disables the ability to set the motor's effort
+ *
+ */
+void BlueMotor::setOverride() { setOverrideEffort(0); }
+
+/**
+ * @brief Overrides the current effort and sets the given value
+ *
+ * @param effort The effort to set the motor to
+ */
+void BlueMotor::setOverrideEffort(int8_t effort) {
+  override = true;
+
+  // Constrain the effort
+  effort = constrain(effort, -99, 99);
+
+  // Set the servo pulse
+  servo.writeMicroseconds(1500 + effort * 5);
+}
+
+/**
+ * @brief Returns whether or not the motor is overridden
+ *
+ * @return If the motor is overridden
+ */
+bool BlueMotor::isOverridden() { return override; }
+
+/**
+ * @brief Clears the override flag and sets the motor's effort to the last
+ * effort
+ *
+ */
+void BlueMotor::clearOverride() {
+  override = false;
+  setEffort(lastEffort);
 }
