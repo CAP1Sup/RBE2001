@@ -112,4 +112,4 @@ class IRProcessor {
 
 extern IRProcessor irProcessor;
 
-// #include "IRProcessor.cpp"
+#include "IRProcessor.cpp"
