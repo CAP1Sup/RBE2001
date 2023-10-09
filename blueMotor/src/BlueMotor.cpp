@@ -31,8 +31,14 @@ void BlueMotor::init() {
 // Set the effort of the motor controller
 void BlueMotor::setEffort(int8_t effort) {
   // Stop execution if the override is active
-  while (override)
-    ;
+  while (true) {
+    noInterrupts();
+    if (!override) {
+      break;
+    }
+    interrupts();
+    delay(10);
+  }
 
   // Constrain the effort
   // Constrain between -99 and 99 because
