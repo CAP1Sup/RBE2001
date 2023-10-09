@@ -122,9 +122,10 @@ void setup() {
 
   // Initialize serial and wait for connection
   Serial.begin(9600);
-  // while (!Serial) {
-  //   delay(10);
-  // }
+  uint32_t startTime = millis();
+  while (!Serial && (millis() - startTime) < 1000) {
+    delay(10);
+  }
 
   // Open the gripper
   while (!gripper.setDesiredState(OPEN))
