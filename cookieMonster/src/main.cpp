@@ -1,24 +1,34 @@
 #include <Arduino.h>
 #include <BlueMotor.h>
 #include <Chassis.h>
+#include <IRProcessor.h>
 #include <Rangefinder.h>
 #include <Romi32U4.h>
 #include <RotaryGripper.h>
 
-#include "IRProcessor.h"
-
 // Op Settings
 // Chassis
-#define FORWARD_SPEED 12   // in/s
-#define TURN_SPEED 90      // deg/s
-#define SEARCH_EFFORT 100  // Motor power, 0-300ish
+#define FORWARD_SPEED 12           // in/s
+#define HOUSE_GO_AROUND_DIST 5     // in
+#define HOUSE_SIDE_TRAVEL_DIST 12  // in
+#define BACKUP_SPEED 6             // in/s
+#define BACKUP_DIST 2              // in
+#define MIDFIELD_BACKUP_DIST 4     // in
+#define TURNAROUND_ANGLE 160       // deg
+#define TURN_SPEED 90              // deg/s
+#define SEARCH_EFFORT 100          // Motor power, 0-300ish
 
 // Line following
 #define BLACK_THRESHOLD 500  // White: ~40, Black: ~800
 #define LINE_FOLLOW_P 0.1    // deg/s per difference in sensor values
 
+// Ultrasonic distances
+#define STAGING_US_DIST 5    // in
+#define HOUSE_US_DIST 12     // in
+#define MIDFIELD_US_DIST 10  // in, should be more than staging block dist
+
 // 4 Bar
-#define MANUAL_MOVE_EFFORT 50           // % of max effort
+#define MANUAL_MOVE_EFFORT 100          // % of max effort
 #define ENCODER_SAMPLING_TIME 100       // ms
 #define STAGING_PLATFORM_ANGLE -19.1    // deg
 #define HOUSE_45_DEG_PANEL_ANGLE 41.78  // deg
@@ -27,6 +37,7 @@
 
 // IR Codes
 #define E_STOP REMOTE_VOL_MINUS
+#define CONFIRM REMOTE_PLAY_PAUSE
 
 // Conversions
 #define INCHES_TO_CM 2.54
@@ -39,34 +50,42 @@
 #define R_LINE_FOLLOW_PIN A3
 #define GRIPPER_FEEDBACK_PIN A4
 
+// Type definitions
+// Field side
+typedef enum { LEFT_SIDE = 1, RIGHT_SIDE = -1, UNKNOWN_SIDE = 0 } FIELD_SIDE;
+
 // Create the objects
 Chassis chassis;
 IRProcessor irProcessor(IR_PIN);
 Rangefinder rangefinder(US_ECHO_PIN, US_TRIG_PIN);
 RotaryGripper gripper(A4);
-BlueMotor motor(0, 1);
-Romi32U4ButtonA buttonA;
-Romi32U4ButtonC buttonC;
-
-// Type definitions
-// Direction inverts the sign of the movement
-typedef enum { LEFT = 1, RIGHT = -1 } TURN_DIR;
+BlueMotor blueMotor(0, 1);
 
 // Variables
 int16_t irCode = -1;
-int lVal, rVal;
+FIELD_SIDE fieldSide = UNKNOWN_SIDE;
+
+bool waitingForConfirm = false;
+
+// Import the move functions
+// Must be done after #defines and Chassis creation
+#include <moveFunctions.h>
 
 // Function prototypes
-int followUntilCross(TURN_DIR searchDir);
-void followUntilCount(TURN_DIR searchDir, int encoderCount);
-void followUntilDist(TURN_DIR searchDir, float distance);
-void turnOnCross(TURN_DIR turnDir);
 void processIRPress();
+void raise4Bar();
 
 // Convenience function
-void waitForButtonA() {
-  while (!buttonA.isPressed())
-    ;
+void waitForConfirmation() {
+  waitingForConfirm = true;
+  while (true) {
+    noInterrupts();
+    if (!waitingForConfirm) {
+      break;
+    }
+    interrupts();
+    delay(10);
+  }
 }
 
 void setup() {
@@ -87,219 +106,132 @@ void setup() {
   gripper.init();
 
   // Initialize the motor
-  motor.init();
+  blueMotor.init();
 
   // Turn off the motor
-  motor.setEffort(0);
+  blueMotor.setEffort(0);
 
   // Set the motor's current angle
   // Should always be staging block
-  motor.setAngle(STAGING_PLATFORM_ANGLE);
+  blueMotor.setAngle(STAGING_PLATFORM_ANGLE);
 
   // Set the motor's PID constants
-  motor.setKp(15);
-  motor.setKi(0);
-  motor.setKd(2500);
+  blueMotor.setKp(15);
+  blueMotor.setKi(0);
+  blueMotor.setKd(2500);
 
   // Initialize serial and wait for connection
   Serial.begin(9600);
-  while (!Serial) {
-    delay(10);
-  }
+  // while (!Serial) {
+  //   delay(10);
+  // }
 
   // Open the gripper
-  gripper.setDesiredState(OPEN);
-}
+  while (!gripper.setDesiredState(OPEN))
+    ;
 
-void loop() {
-  // Print the IR code
-  Serial.println(irCode);
-
-  // Run the whatever the code says
-  if (irCode == REMOTE_UP) {
-    motor.setEffort(MANUAL_MOVE_EFFORT);
-  } else if (irCode == REMOTE_DOWN) {
-    motor.setEffort(-MANUAL_MOVE_EFFORT);
-  } else {
-    motor.setEffort(0);
-  }
-}
-
-/**
- * @brief Follows the line until the cross is found
- *
- * @param searchDir The direction to search for the line
- * @return int The encoder count when the cross is found
- */
-int followUntilCross(TURN_DIR searchDir) {
-  // White: ~40
-  // Black: ~800
-
-  // We're not on the line yet
-  bool onLine = false;
-
-  // Loop until we find the cross
+  // Wait for the user to select a field side
+  // 1 = left, 3 = right
   while (true) {
-    // Get the values from the reflectance sensors
-    // analogRead() calls are expensive
-    lVal = analogRead(L_LINE_FOLLOW_PIN);
-    rVal = analogRead(R_LINE_FOLLOW_PIN);
-
-    if (onLine) {
-      // We're on the line
-      if (lVal > BLACK_THRESHOLD && rVal > BLACK_THRESHOLD) {
-        // We're at the cross
-        chassis.idle();
-
-        // Break the loop and return the encoder count
-        // Add a constant to account for the distance between the line sensor
-        // and the center of the robot
-        return chassis.getLeftEncoderCount(true) + 250;
-
-      } else {
-        // Calculate the difference between the two line sensors
-        int difference =
-            analogRead(L_LINE_FOLLOW_PIN) - analogRead(R_LINE_FOLLOW_PIN);
-        chassis.setTwist(FORWARD_SPEED * INCHES_TO_CM,
-                         LINE_FOLLOW_P * difference);
-      }
-    } else {
-      // We're off the line, turn until we find it
-      chassis.setMotorEfforts(searchDir * -SEARCH_EFFORT,
-                              searchDir * SEARCH_EFFORT);
-
-      // Check if we're on the line
-      if (lVal > BLACK_THRESHOLD || rVal > BLACK_THRESHOLD) {
-        onLine = true;
-        // Reset the left encoder's value
-        chassis.getLeftEncoderCount(true);
-      }
+    noInterrupts();
+    if (fieldSide != UNKNOWN_SIDE) {
+      break;
     }
-
-    // Limit the update rate to allow motors time to move
+    interrupts();
     delay(10);
   }
+
+  // Old panel grab
+  raise4Bar();
+  followUntilDist(LEFT, HOUSE_US_DIST);
+  while (!gripper.setDesiredState(CLOSED))
+    ;
+
+  // Old panel return
+  while (!blueMotor.moveTo(CLEARANCE_ANGLE))
+    ;
+  chassis.driveFor(-BACKUP_DIST * INCHES_TO_CM, BACKUP_SPEED * INCHES_TO_CM,
+                   true);
+  chassis.turnFor(TURNAROUND_ANGLE, TURN_SPEED, true);
+  followUntilCross(LEFT);
+  turnOnCross((TURN_DIR)-fieldSide);
+  followUntilDist((TURN_DIR)-fieldSide, STAGING_US_DIST);
+  while (!blueMotor.moveTo(STAGING_PLATFORM_ANGLE))
+    ;
+  while (!gripper.setDesiredState(OPEN))
+    ;
+  waitForConfirmation();
+
+  // New panel placement
+  while (!gripper.setDesiredState(CLOSED))
+    ;
+  while (!blueMotor.moveTo(CLEARANCE_ANGLE))
+    ;
+  chassis.turnFor(TURNAROUND_ANGLE, TURN_SPEED, true);
+  followUntilCross(LEFT);
+  turnOnCross((TURN_DIR)fieldSide);
+  followUntilDist((TURN_DIR)fieldSide, HOUSE_US_DIST);
+  raise4Bar();
+  while (!gripper.setDesiredState(OPEN))
+    ;
+  waitForConfirmation();
+
+  // Move to other side of field
+  chassis.driveFor(-BACKUP_DIST * INCHES_TO_CM, BACKUP_SPEED * INCHES_TO_CM,
+                   true);
+  chassis.turnFor(90 * fieldSide, TURN_SPEED, true);
+  chassis.driveFor(HOUSE_GO_AROUND_DIST * INCHES_TO_CM,
+                   FORWARD_SPEED * INCHES_TO_CM, true);
+  chassis.turnFor(90 * -fieldSide, TURN_SPEED, true);
+  chassis.driveFor(HOUSE_SIDE_TRAVEL_DIST * INCHES_TO_CM,
+                   FORWARD_SPEED * INCHES_TO_CM, true);
+  chassis.turnFor(90 * -fieldSide, TURN_SPEED, true);
+  driveUntilCross();
+  turnOnCross((TURN_DIR)fieldSide);
+  waitForConfirmation();
+
+  // Old panel grab from midfield (from 2nd robot)
+  while (!blueMotor.moveTo(STAGING_PLATFORM_ANGLE))
+    ;
+  driveUntilDist(MIDFIELD_US_DIST);
+  followUntilDist(LEFT, STAGING_US_DIST);
+  while (!gripper.setDesiredState(CLOSED))
+    ;
+  while (!blueMotor.moveTo(CLEARANCE_ANGLE))
+    ;
+  chassis.driveFor(-BACKUP_DIST * INCHES_TO_CM, BACKUP_SPEED * INCHES_TO_CM,
+                   true);
+  chassis.turnFor(180, TURN_SPEED, true);
+  driveUntilCross();
+  turnOnCross((TURN_DIR)fieldSide);
+  followUntilDist((TURN_DIR)fieldSide, STAGING_US_DIST);
+  while (!blueMotor.moveTo(STAGING_PLATFORM_ANGLE))
+    ;
+  while (!gripper.setDesiredState(OPEN))
+    ;
+  waitForConfirmation();
+
+  // New panel placement to midfield (for 2nd robot)
+  while (!gripper.setDesiredState(CLOSED))
+    ;
+  while (!blueMotor.moveTo(CLEARANCE_ANGLE))
+    ;
+  chassis.driveFor(-MIDFIELD_BACKUP_DIST * INCHES_TO_CM,
+                   BACKUP_SPEED * INCHES_TO_CM, true);
+  chassis.turnFor(90 * fieldSide, TURN_SPEED, true);
+  driveUntilDist(MIDFIELD_US_DIST);
+  followUntilDist(LEFT, STAGING_US_DIST);
+  while (!blueMotor.moveTo(STAGING_PLATFORM_ANGLE))
+    ;
+  while (!gripper.setDesiredState(OPEN))
+    ;
+  waitForConfirmation();
+  chassis.driveFor(-BACKUP_DIST * INCHES_TO_CM, BACKUP_SPEED * INCHES_TO_CM,
+                   true);
+  // Finished!
 }
 
-/**
- * @brief Follows the line until the given encoder count is reached
- *
- * @param searchDir The direction to search for the line
- * @param encoderCount The encoder count to stop at
- */
-void followUntilCount(TURN_DIR searchDir, int encoderCount) {
-  // White: ~40
-  // Black: ~800
-
-  // We're not on the line yet
-  bool onLine = false;
-
-  // Loop until we find the cross
-  while (true) {
-    // Get the values from the reflectance sensors
-    // analogRead() calls are expensive
-    lVal = analogRead(L_LINE_FOLLOW_PIN);
-    rVal = analogRead(R_LINE_FOLLOW_PIN);
-
-    if (onLine) {
-      // We're on the line
-      if (chassis.getLeftEncoderCount() >= encoderCount) {
-        // We went the distance we needed to
-        chassis.idle();
-
-        // Break the loop
-        return;
-      } else {
-        // Calculate the difference between the two line sensors
-        int difference =
-            analogRead(L_LINE_FOLLOW_PIN) - analogRead(R_LINE_FOLLOW_PIN);
-        chassis.setTwist(FORWARD_SPEED * INCHES_TO_CM,
-                         LINE_FOLLOW_P * difference);
-      }
-    } else {
-      // We're off the line, turn until we find it
-      chassis.setMotorEfforts(searchDir * -SEARCH_EFFORT,
-                              searchDir * SEARCH_EFFORT);
-
-      // Check if we're on the line
-      if (lVal > BLACK_THRESHOLD || rVal > BLACK_THRESHOLD) {
-        onLine = true;
-        // Reset the left encoder's value
-        chassis.getLeftEncoderCount(true);
-      }
-    }
-
-    // Limit the update rate to allow motors to move
-    delay(10);
-  }
-}
-
-/**
- * @brief Follows the line until the given minimum distance on the ultrasonic
- * sensor is reached
- *
- * @param searchDir The direction to search for the line
- * @param distance The minimum distance to stop at (in inches)
- */
-void followUntilDist(TURN_DIR searchDir, float distance) {
-  // White: ~40
-  // Black: ~800
-
-  // We're not on the line yet
-  bool onLine = false;
-
-  // Loop until we find the cross
-  while (true) {
-    // Get the values from the reflectance sensors
-    // analogRead() calls are expensive
-    lVal = analogRead(L_LINE_FOLLOW_PIN);
-    rVal = analogRead(R_LINE_FOLLOW_PIN);
-
-    if (onLine) {
-      // We're on the line
-      if (rangefinder.getDistance() <= distance * INCHES_TO_CM) {
-        // We went the distance we needed to
-        chassis.idle();
-
-        // Break the loop
-        return;
-      } else {
-        // Calculate the difference between the two line sensors
-        int difference =
-            analogRead(L_LINE_FOLLOW_PIN) - analogRead(R_LINE_FOLLOW_PIN);
-        chassis.setTwist(FORWARD_SPEED * INCHES_TO_CM,
-                         LINE_FOLLOW_P * difference);
-      }
-    } else {
-      // We're off the line, turn until we find it
-      chassis.setMotorEfforts(searchDir * -SEARCH_EFFORT,
-                              searchDir * SEARCH_EFFORT);
-
-      // Check if we're on the line
-      if (lVal > BLACK_THRESHOLD || rVal > BLACK_THRESHOLD) {
-        onLine = true;
-        // Reset the left encoder's value
-        chassis.getLeftEncoderCount(true);
-      }
-    }
-
-    // Limit the update rate to allow motors to move
-    delay(10);
-  }
-}
-
-/**
- * @brief Moves the robot forward over the cross and turns to the given
- *
- * @param turnDir The direction to turn
- */
-void turnOnCross(TURN_DIR turnDir) {
-  // Move forward over the cross
-  chassis.driveFor(3 * INCHES_TO_CM, FORWARD_SPEED * INCHES_TO_CM, true);
-
-  // Turn to the given direction
-  chassis.turnFor(turnDir * 70, TURN_SPEED, true);
-}
+void loop() {}
 
 /**
  * @brief Processes the IR press
@@ -319,12 +251,44 @@ void processIRPress() {
 
   // Stop the motor if the e-stop button is pressed
   if (keyCode == E_STOP) {
-    if (motor.isOverridden()) {
-      motor.clearOverride();
+    if (blueMotor.isOverridden()) {
+      blueMotor.clearOverride();
     } else {
-      motor.setOverride();
+      blueMotor.setOverride();
     }
+
+    // Field side settings
+  } else if (keyCode == REMOTE_1) {
+    if (fieldSide == UNKNOWN_SIDE) {
+      fieldSide = LEFT_SIDE;
+    }
+  } else if (keyCode == REMOTE_3) {
+    if (fieldSide == UNKNOWN_SIDE) {
+      fieldSide = RIGHT_SIDE;
+    }
+
+    // Confirmation button
+  } else if (keyCode == CONFIRM) {
+    waitingForConfirm = false;
+
+    // Other buttons
   } else {
     irCode = keyCode;
+  }
+}
+
+/**
+ * @brief Raises the 4 bar to the correct height
+ *
+ */
+void raise4Bar() {
+  if (fieldSide == LEFT_SIDE) {
+    // Raise the 4 bar to the 25 deg angle
+    while (!blueMotor.moveTo(HOUSE_25_DEG_PANEL_ANGLE))
+      ;
+  } else if (fieldSide == RIGHT_SIDE) {
+    // Raise the 4 bar to the 45 deg angle
+    while (!blueMotor.moveTo(HOUSE_45_DEG_PANEL_ANGLE))
+      ;
   }
 }
