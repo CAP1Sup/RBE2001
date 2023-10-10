@@ -8,14 +8,14 @@
 
 // Op Settings
 // Chassis
-#define FORWARD_SPEED 12           // in/s
+#define FORWARD_SPEED 3            // in/s
 #define HOUSE_GO_AROUND_DIST 5     // in
 #define HOUSE_SIDE_TRAVEL_DIST 12  // in
-#define BACKUP_SPEED 6             // in/s
+#define BACKUP_SPEED 2             // in/s
 #define BACKUP_DIST 2              // in
 #define MIDFIELD_BACKUP_DIST 4     // in
 #define TURNAROUND_ANGLE 160       // deg
-#define TURN_SPEED 90              // deg/s
+#define TURN_SPEED 30              // deg/s
 #define SEARCH_EFFORT 100          // Motor power, 0-300ish
 
 // Line following
@@ -43,9 +43,9 @@
 #define INCHES_TO_CM 2.54
 
 // Pin settings
-#define IR_PIN 2
-#define US_TRIG_PIN 3
-#define US_ECHO_PIN 7
+#define IR_PIN 11
+#define US_TRIG_PIN 12
+#define US_ECHO_PIN 3
 #define L_LINE_FOLLOW_PIN A2
 #define R_LINE_FOLLOW_PIN A3
 #define GRIPPER_FEEDBACK_PIN A4
@@ -60,6 +60,8 @@ IRProcessor irProcessor(IR_PIN);
 Rangefinder rangefinder(US_ECHO_PIN, US_TRIG_PIN);
 RotaryGripper gripper(A4);
 BlueMotor blueMotor(0, 1);
+Romi32U4ButtonA buttonA;
+Romi32U4ButtonC buttonC;
 
 // Variables
 int16_t irCode = -1;
@@ -123,7 +125,7 @@ void setup() {
   // Initialize serial and wait for connection
   Serial.begin(9600);
   uint32_t startTime = millis();
-  while (!Serial && (millis() - startTime) < 1000) {
+  while (!Serial && (millis() - startTime) < 5000) {
     delay(10);
   }
 
@@ -139,10 +141,30 @@ void setup() {
       break;
     }
     interrupts();
+    if (buttonA.isPressed()) {
+      blueMotor.setEffort(-MANUAL_MOVE_EFFORT);
+    } else if (buttonC.isPressed()) {
+      blueMotor.setEffort(MANUAL_MOVE_EFFORT);
+    } else {
+      blueMotor.setEffort(0);
+    }
+    if (Serial.available() > 0) {
+      char c = Serial.read();
+      if (c == '1') {
+        fieldSide = LEFT_SIDE;
+      } else if (c == '3') {
+        fieldSide = RIGHT_SIDE;
+      }
+    }
     delay(10);
   }
 
+  Serial.print("Starting panel old grab");
+
   // Old panel grab
+  chassis.turnFor(TURNAROUND_ANGLE, TURN_SPEED, true);
+  followUntilCross(LEFT);
+  turnOnCross((TURN_DIR)fieldSide);
   raise4Bar();
   followUntilDist(LEFT, HOUSE_US_DIST);
   while (!gripper.setDesiredState(CLOSED))
