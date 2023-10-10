@@ -159,7 +159,7 @@ void setup() {
     delay(10);
   }
 
-  Serial.print("Starting panel old grab");
+  delay(5000);
 
   // Old panel grab
   chassis.turnFor(TURNAROUND_ANGLE, TURN_SPEED, true);
