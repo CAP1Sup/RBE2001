@@ -53,15 +53,26 @@ uint16_t RotaryGripper::getAngle() { return analogRead(feedbackPin); }
  */
 bool RotaryGripper::setDesiredState(GripperState state) {
 #ifdef DEBUG
-  Serial.println(getAngle());
+  Serial.print(getAngle());
+  Serial.print(" ");
+  Serial.print(state);
+  Serial.print(" ");
+  Serial.print(prevSetState);
+  Serial.print(" ");
+  Serial.print(lastSetTime);
+  Serial.print(" ");
+  Serial.println(millis() - lastSetTime);
+  delay(10);
 #endif
   if (state == OPEN) {
     if (prevSetState != OPEN) {
       // Move the motor to open the gripper
       setAngle(OPEN_SERVO_ANGLE);
 
+      noInterrupts();
       // Record the time
       lastSetTime = millis();
+      interrupts();
     }
 
     // Update the previous state
@@ -81,8 +92,10 @@ bool RotaryGripper::setDesiredState(GripperState state) {
       setAngle(CLOSED_SERVO_ANGLE);
 
       // Record the time
+      noInterrupts();
       lastSetTime = millis();
       closeFailed = false;
+      interrupts();
     }
 
     // Make sure that the close didn't fail
@@ -96,7 +109,7 @@ bool RotaryGripper::setDesiredState(GripperState state) {
       }
 
       // Check if the gripper is stuck
-      if (millis() - lastSetTime > TIME_TOLERANCE) {
+      if (millis() - lastSetTime > CLOSING_TIME_TOLERANCE) {
         // Gripper is stuck, open the it
         setAngle(OPEN_SERVO_ANGLE);
         lastSetTime = millis();

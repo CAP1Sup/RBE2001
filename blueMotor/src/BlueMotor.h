@@ -11,7 +11,7 @@
 #define LOWERING_DEADBAND 31
 #define RAISING_DEADBAND 45
 #define ENCODER_TICKS_PER_REV 540  // ticks per revolution
-#define ENCODER_GEAR_RATIO 36      // gear ratio
+#define ENCODER_GEAR_RATIO 48      // gear ratio
 #define ENCODER_DEG_TO_TICK \
   (ENCODER_TICKS_PER_REV / 360.0f * ENCODER_GEAR_RATIO)
 // #define DEBUG

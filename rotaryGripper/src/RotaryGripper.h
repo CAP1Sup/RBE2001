@@ -4,14 +4,14 @@
 #include <Servo32U4.h>
 
 // Compiler definitions
-#define CLOSED_POT_VAL 223     // ADC values (0-1023)
-#define OPEN_POT_VAL 355       // ADC values (0-1023)
-#define CLOSED_SERVO_ANGLE 10  // deg (0-180)
-#define LOCKED_SERVO_ANGLE 16  // deg (0-180)
-#define OPEN_SERVO_ANGLE 140   // deg (0-180)
-#define OPENING_TIME 500       // ms
-#define POSITION_TOLERANCE 5   // ADC values (0-1023)
-#define TIME_TOLERANCE 1500    // Ms before aborting closing the gripper
+#define CLOSED_POT_VAL 223           // ADC values (0-1023)
+#define OPEN_POT_VAL 355             // ADC values (0-1023)
+#define CLOSED_SERVO_ANGLE 10        // deg (0-180)
+#define LOCKED_SERVO_ANGLE 16        // deg (0-180)
+#define OPEN_SERVO_ANGLE 140         // deg (0-180)
+#define OPENING_TIME 500             // ms
+#define POSITION_TOLERANCE 5         // ADC values (0-1023)
+#define CLOSING_TIME_TOLERANCE 2000  // Ms before aborting closing the gripper
 // #define DEBUG
 
 // Type definitions
@@ -38,7 +38,7 @@ class RotaryGripper {
   uint8_t feedbackPin;
   GripperState prevSetState = UNKNOWN;
   GripperState currentState = UNKNOWN;
-  uint32_t lastSetTime;
+  uint32_t lastSetTime = 0;
   bool closeFailed = false;
 };
 
