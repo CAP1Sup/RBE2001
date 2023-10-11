@@ -31,12 +31,7 @@ void BlueMotor::init() {
 // Set the effort of the motor controller
 void BlueMotor::setEffort(int8_t effort) {
   // Stop execution if the override is active
-  while (true) {
-    noInterrupts();
-    if (!override) {
-      break;
-    }
-    interrupts();
+  while (eStop) {
     delay(10);
   }
 
@@ -44,9 +39,6 @@ void BlueMotor::setEffort(int8_t effort) {
   // Constrain between -99 and 99 because
   // motor controller will disable if effort is 100
   effort = constrain(effort, -99, 99);
-
-  // Set the last effort
-  lastEffort = effort;
 
   // Set the servo pulse
   servo.writeMicroseconds(1500 + effort * 5);
@@ -151,39 +143,16 @@ void BlueMotor::setAngle(float angle) {
 // THEY WILL CALL INFINITE LOOPS
 
 /**
- * @brief Stops the motor and disables the ability to set the motor's effort
+ * @brief Set the eStop state of the motor
  *
+ * @param eStop The eStop state to set
  */
-void BlueMotor::setOverride() { setOverrideEffort(0); }
+void BlueMotor::setEStop(bool eStop) {
+  if (eStop) {
+    // Stop the motor
+    setEffort(0);
+  }
 
-/**
- * @brief Overrides the current effort and sets the given value
- *
- * @param effort The effort to set the motor to
- */
-void BlueMotor::setOverrideEffort(int8_t effort) {
-  override = true;
-
-  // Constrain the effort
-  effort = constrain(effort, -99, 99);
-
-  // Set the servo pulse
-  servo.writeMicroseconds(1500 + effort * 5);
-}
-
-/**
- * @brief Returns whether or not the motor is overridden
- *
- * @return If the motor is overridden
- */
-bool BlueMotor::isOverridden() { return override; }
-
-/**
- * @brief Clears the override flag and sets the motor's effort to the last
- * effort
- *
- */
-void BlueMotor::clearOverride() {
-  override = false;
-  setEffort(lastEffort);
+  // Set the eStop state
+  this->eStop = eStop;
 }

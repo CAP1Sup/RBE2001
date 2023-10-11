@@ -32,6 +32,7 @@ class RotaryGripper {
   uint16_t getAngle();
   bool setDesiredState(GripperState state);
   GripperState getCurrentState();
+  void setEStop(bool eStop);
 
  private:
   Servo32U4Pin5 servo;
@@ -40,6 +41,7 @@ class RotaryGripper {
   GripperState currentState = UNKNOWN;
   uint32_t lastSetTime = 0;
   bool closeFailed = false;
+  bool eStop = false;
 };
 
 // Include the source file

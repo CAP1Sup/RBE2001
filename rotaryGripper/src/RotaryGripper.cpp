@@ -33,6 +33,9 @@ void RotaryGripper::init() {
  * @param angle The angle to set the servo to (0 to 180)
  */
 void RotaryGripper::setAngle(int angle) {
+  if (eStop) {
+    return;
+  }
   servo.writeMicroseconds(map(angle, 0, 180, 1000, 2000));
 }
 
@@ -64,6 +67,9 @@ bool RotaryGripper::setDesiredState(GripperState state) {
   Serial.println(millis() - lastSetTime);
   delay(10);
 #endif
+  if (eStop) {
+    return false;
+  }
   if (state == OPEN) {
     if (prevSetState != OPEN) {
       // Move the motor to open the gripper
@@ -139,3 +145,10 @@ bool RotaryGripper::setDesiredState(GripperState state) {
  * @return GripperState The current state of the gripper
  */
 GripperState RotaryGripper::getCurrentState() { return currentState; }
+
+/**
+ * @brief Sets the e-stop state of the gripper
+ *
+ * @param eStop The e-stop state to set
+ */
+void RotaryGripper::setEStop(bool eStop) { this->eStop = eStop; }

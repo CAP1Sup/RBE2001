@@ -53,14 +53,10 @@ class BlueMotor {
   void setKi(float k) { pid.setKi(k); }
   void setKd(float k) { pid.setKd(k); }
 
-  // Override functions
   // Called by the remote
-  // REGULAR SET EFFORT CALLS WILL NOT WORK WHILE OVERRIDE IS ACTIVE
+  // REGULAR SET EFFORT CALLS WILL NOT WORK WHILE ESTOP IS ACTIVE
   // THEY WILL CALL INFINITE LOOPS
-  void setOverride();
-  void setOverrideEffort(int8_t effort);
-  bool isOverridden();
-  void clearOverride();
+  void setEStop(bool eStop);
 
  private:
   // Servo motor object (for MC29)
@@ -75,12 +71,8 @@ class BlueMotor {
   // PID controller
   PIDController pid = PIDController(DEFAULT_KP);
 
-  // Override flag
-  bool override = false;
-
-  // Last effort set
-  // Used when override is released
-  int8_t lastEffort = 0;
+  // eStop flag
+  volatile bool eStop = false;
 };
 
 // Include the source file

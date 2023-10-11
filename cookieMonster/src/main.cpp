@@ -79,7 +79,7 @@ Romi32U4ButtonC buttonC;
 volatile int16_t irCode = -1;
 volatile FIELD_SIDE fieldSide = UNKNOWN_SIDE;
 volatile bool skipToMidfield = false;
-
+volatile bool eStop = false;
 volatile bool waitingForConfirm = false;
 
 // Import the move functions
@@ -137,10 +137,10 @@ void setup() {
 
   // Initialize serial and wait for connection
   Serial.begin(9600);
-  uint32_t startTime = millis();
-  while (!Serial && (millis() - startTime) < 5000) {
-    delay(10);
-  }
+  // uint32_t startTime = millis();
+  // while (!Serial && (millis() - startTime) < 1000) {
+  //  delay(10);
+  // }
 
   // Open the gripper
   while (!gripper.setDesiredState(OPEN))
@@ -149,14 +149,12 @@ void setup() {
   // Wait for the user to select a field side
   // 1 = left, 3 = right
   while (true) {
-    noInterrupts();
     if (fieldSide != UNKNOWN_SIDE) {
       break;
     }
-    interrupts();
-    if (buttonA.isPressed()) {
+    if (buttonA.isPressed() || irCode == REMOTE_DOWN) {
       blueMotor.setEffort(-MANUAL_MOVE_EFFORT);
-    } else if (buttonC.isPressed()) {
+    } else if (buttonC.isPressed() || irCode == REMOTE_UP) {
       blueMotor.setEffort(MANUAL_MOVE_EFFORT);
     } else {
       blueMotor.setEffort(0);
@@ -171,8 +169,6 @@ void setup() {
     }
     delay(10);
   }
-
-  delay(5000);
 
   if (!skipToMidfield) {
 // Old panel grab
@@ -317,11 +313,10 @@ void processIRPress() {
 
   // Stop the motor if the e-stop button is pressed
   if (keyCode == E_STOP) {
-    if (blueMotor.isOverridden()) {
-      blueMotor.clearOverride();
-    } else {
-      blueMotor.setOverride();
-    }
+    eStop = !eStop;
+    chassis.setEStop(eStop);
+    blueMotor.setEStop(eStop);
+    gripper.setEStop(eStop);
 
     // Field side settings
   } else if (keyCode == REMOTE_1) {
