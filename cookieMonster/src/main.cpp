@@ -70,17 +70,17 @@ typedef enum { LEFT_SIDE = 1, RIGHT_SIDE = -1, UNKNOWN_SIDE = 0 } FIELD_SIDE;
 Chassis chassis;
 IRProcessor irProcessor(IR_PIN);
 Rangefinder rangefinder(US_ECHO_PIN, US_TRIG_PIN);
-RotaryGripper gripper(A4);
+RotaryGripper gripper(GRIPPER_FEEDBACK_PIN);
 BlueMotor blueMotor(0, 1);
 Romi32U4ButtonA buttonA;
 Romi32U4ButtonC buttonC;
 
 // Variables
-int16_t irCode = -1;
-FIELD_SIDE fieldSide = UNKNOWN_SIDE;
-bool skipToMidfield = false;
+volatile int16_t irCode = -1;
+volatile FIELD_SIDE fieldSide = UNKNOWN_SIDE;
+volatile bool skipToMidfield = false;
 
-bool waitingForConfirm = false;
+volatile bool waitingForConfirm = false;
 
 // Import the move functions
 // Must be done after #defines and Chassis creation
@@ -88,7 +88,6 @@ bool waitingForConfirm = false;
 
 // Function prototypes
 void processIRPress();
-void raise4Bar();
 
 // Convenience function
 void waitForConfirmation() {
@@ -347,20 +346,4 @@ void processIRPress() {
 
   // Re-enable the interrupts
   interrupts();
-}
-
-/**
- * @brief Raises the 4 bar to the correct height
- *
- */
-void raise4Bar() {
-  if (fieldSide == LEFT_SIDE) {
-    // Raise the 4 bar to the 45 deg angle
-    while (!blueMotor.moveTo(HOUSE_45_DEG_PANEL_ANGLE))
-      ;
-  } else if (fieldSide == RIGHT_SIDE) {
-    // Raise the 4 bar to the 25 deg angle
-    while (!blueMotor.moveTo(HOUSE_25_DEG_PANEL_ANGLE))
-      ;
-  }
 }
