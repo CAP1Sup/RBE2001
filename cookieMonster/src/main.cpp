@@ -8,10 +8,10 @@
 
 // Op Settings
 // Overall section enable
-#define ENABLE_OLD_PLATE_PICKUP
-#define ENABLE_NEW_PLATE_DROP_OFF
-#define ENABLE_MIDFIELD_PLATE_PICKUP
-#define ENABLE_MIDFIELD_PLATE_DROP_OFF
+#define FIRST_ENABLE_OLD_PLATE_PICKUP
+#define FIRST_ENABLE_NEW_PLATE_DROP_OFF
+#define FIRST_ENABLE_MIDFIELD_PLATE_PICKUP
+#define FIRST_ENABLE_MIDFIELD_PLATE_DROP_OFF
 
 // Chassis
 #define FORWARD_SPEED 6            // in/s
@@ -64,6 +64,7 @@
 
 // Type definitions
 // Field side
+typedef enum { FIRST, SECOND, UNKNOWN_NUM } ROBOT_NUM;
 typedef enum { LEFT_SIDE = 1, RIGHT_SIDE = -1, UNKNOWN_SIDE = 0 } FIELD_SIDE;
 
 // Create the objects
@@ -77,6 +78,7 @@ Romi32U4ButtonC buttonC;
 
 // Variables
 volatile int16_t irCode = -1;
+volatile ROBOT_NUM robotNum = UNKNOWN_NUM;
 volatile FIELD_SIDE fieldSide = UNKNOWN_SIDE;
 volatile bool skipToMidfield = false;
 volatile bool eStop = false;
@@ -88,6 +90,7 @@ volatile bool waitingForConfirm = false;
 
 // Function prototypes
 void processIRPress();
+void raise4bar();
 
 // Convenience function
 void waitForConfirmation() {
@@ -146,7 +149,7 @@ void setup() {
   // Wait for the user to select a field side
   // 1 = left, 3 = right
   while (true) {
-    if (fieldSide != UNKNOWN_SIDE) {
+    if (robotNum != UNKNOWN_NUM) {
       break;
     }
     if (buttonA.isPressed() || irCode == REMOTE_DOWN) {
@@ -161,27 +164,14 @@ void setup() {
 
   if (!skipToMidfield) {
 // Old panel grab
-#ifdef ENABLE_OLD_PLATE_PICKUP
+#ifdef FIRST_ENABLE_OLD_PLATE_PICKUP
     chassis.turnFor(TURNAROUND_ANGLE, TURN_SPEED, true);
     followUntilCross(LEFT);
     turnOnCross((TURN_DIR)fieldSide);
-    if (fieldSide == RIGHT_SIDE) {
-      while (!blueMotor.moveTo(HOUSE_25_DEG_PANEL_MOVE_IN_ANGLE))
-        ;
-      followUntilDist((TURN_DIR)fieldSide, HOUSE_25_US_MOVE_IN_DIST);
-      while (!blueMotor.moveTo(HOUSE_25_DEG_PANEL_ANGLE))
-        ;
-      followUntilDist((TURN_DIR)fieldSide, HOUSE_25_US_DIST);
-    } else {
-      while (!blueMotor.moveTo(HOUSE_45_DEG_PANEL_MOVE_IN_ANGLE))
-        ;
-      followUntilDist((TURN_DIR)fieldSide, HOUSE_45_US_MOVE_IN_DIST);
-      while (!blueMotor.moveTo(HOUSE_45_DEG_PANEL_ANGLE))
-        ;
-      followUntilDist((TURN_DIR)fieldSide, HOUSE_45_US_DIST);
-    }
+    raise4Bar();
     while (!gripper.setDesiredState(CLOSED))
       ;
+    waitForConfirmation(); // to make sure the plate is in the gripper
 
     // Old panel return
     while (!blueMotor.moveTo(CLEARANCE_ANGLE))
@@ -194,11 +184,12 @@ void setup() {
     followUntilDist((TURN_DIR)-fieldSide, STAGING_US_DIST);
     while (!blueMotor.moveTo(STAGING_PLATFORM_ANGLE))
       ;
+    waitForConfirmation(); // to make sure the plate is placed correctly
     while (!gripper.setDesiredState(OPEN))
       ;
-    waitForConfirmation();
+    waitForConfirmation(); // to make sure that the new plate is placed
 #endif
-#ifdef ENABLE_NEW_PLATE_DROP_OFF
+#ifdef FIRST_ENABLE_NEW_PLATE_DROP_OFF
     // New panel placement
     while (!gripper.setDesiredState(CLOSED))
       ;
@@ -216,9 +207,9 @@ void setup() {
       while (!blueMotor.moveTo(HOUSE_45_DEG_PANEL_ANGLE))
         ;
     }
+    waitForConfirmation(); // to make sure that the plate is placed correctly
     while (!gripper.setDesiredState(OPEN))
       ;
-    // waitForConfirmation();
 
     // Move to other side of field
     chassis.driveFor(-BACKUP_DIST * INCHES_TO_CM, BACKUP_SPEED * INCHES_TO_CM,
@@ -234,10 +225,10 @@ void setup() {
     chassis.turnFor(90 * -fieldSide, TURN_SPEED, true);
     driveUntilCross();
     turnOnCross((TURN_DIR)-fieldSide);
-    // waitForConfirmation();
+    waitForConfirmation();
 #endif
   } else {
-#ifdef ENABLE_MIDFIELD_PLATE_PICKUP
+#ifdef FIRST_ENABLE_MIDFIELD_PLATE_PICKUP
     // Old panel grab from midfield (from 2nd robot)
     driveUntilDist(MIDFIELD_US_DIST);
     followUntilDist(LEFT, STAGING_US_DIST);
@@ -255,9 +246,9 @@ void setup() {
       ;
     while (!gripper.setDesiredState(OPEN))
       ;
-    waitForConfirmation();
+    waitForConfirmation(); // that the plates have been swapped
 #endif
-#ifdef ENABLE_MIDFIELD_PLATE_DROP_OFF
+#ifdef FIRST_ENABLE_MIDFIELD_PLATE_DROP_OFF
     // New panel placement to midfield (for 2nd robot)
     while (!gripper.setDesiredState(CLOSED))
       ;
@@ -305,17 +296,25 @@ void processIRPress() {
     blueMotor.setEStop(eStop);
     gripper.setEStop(eStop);
 
-    // Field side settings
+    // Field settings
   } else if (keyCode == REMOTE_1) {
+    if (robotNum == UNKNOWN_NUM) {
+      robotNum = FIRST;
+    }
+  } else if (keyCode == REMOTE_2) {
+    if (robotNum == UNKNOWN_NUM) {
+      robotNum = SECOND;
+    }
+  } else if (keyCode == REMOTE_LEFT) {
     if (fieldSide == UNKNOWN_SIDE) {
       fieldSide = LEFT_SIDE;
     }
-  } else if (keyCode == REMOTE_2) {
-    skipToMidfield = true;
-  } else if (keyCode == REMOTE_3) {
+  } else if (keyCode == REMOTE_RIGHT) {
     if (fieldSide == UNKNOWN_SIDE) {
       fieldSide = RIGHT_SIDE;
     }
+  } else if (keyCode == REMOTE_BACK) {
+    skipToMidfield = true;
 
     // Confirmation button
   } else if (keyCode == CONFIRM) {
@@ -324,5 +323,23 @@ void processIRPress() {
     // Other buttons
   } else {
     irCode = keyCode;
+  }
+}
+
+void raise4Bar() {
+  if (fieldSide == RIGHT_SIDE) {
+    while (!blueMotor.moveTo(HOUSE_25_DEG_PANEL_MOVE_IN_ANGLE))
+      ;
+    followUntilDist((TURN_DIR)fieldSide, HOUSE_25_US_MOVE_IN_DIST);
+    while (!blueMotor.moveTo(HOUSE_25_DEG_PANEL_ANGLE))
+      ;
+    followUntilDist((TURN_DIR)fieldSide, HOUSE_25_US_DIST);
+  } else {
+    while (!blueMotor.moveTo(HOUSE_45_DEG_PANEL_MOVE_IN_ANGLE))
+      ;
+    followUntilDist((TURN_DIR)fieldSide, HOUSE_45_US_MOVE_IN_DIST);
+    while (!blueMotor.moveTo(HOUSE_45_DEG_PANEL_ANGLE))
+      ;
+    followUntilDist((TURN_DIR)fieldSide, HOUSE_45_US_DIST);
   }
 }
