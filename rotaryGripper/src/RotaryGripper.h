@@ -11,7 +11,7 @@
 #define OPEN_SERVO_ANGLE 140         // deg (0-180)
 #define OPENING_TIME 500             // ms
 #define POSITION_TOLERANCE 5         // ADC values (0-1023)
-#define CLOSING_TIME_TOLERANCE 2000  // Ms before aborting closing the gripper
+#define CLOSING_TIME_TOLERANCE 3000  // Ms before aborting closing the gripper
 // #define DEBUG
 
 // Type definitions

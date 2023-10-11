@@ -20,7 +20,7 @@
 // Chassis
 #define FORWARD_SPEED 3                // in/s
 #define HOUSE_GO_AROUND_DIST 16        // in
-#define HOUSE_SIDE_TRAVEL_DIST 22      // in
+#define HOUSE_SIDE_TRAVEL_DIST 18      // in
 #define MIDFIELD_DIST_FROM_LINE 8.5    // in
 #define MIDFIELD_DIST_BEFORE_US 2      // in
 #define BACKUP_SPEED 1.5               // in/s
@@ -45,21 +45,22 @@
 #define HOUSE_45_US_DIST 2          // in
 #define FIRST_MIDFIELD_US_DIST \
   3.5  // in, should be more than staging block dist
-#define SECOND_MIDFIELD_US_DIST 1.5  // in
+#define SECOND_MIDFIELD_US_DIST 1.5          // in
+#define SECOND_MIDFIELD_EXTRA_MOVE_DIST 0.5  // in
 #define MIDFIELD_RAM_US_DIST \
   1  // in, should be less than second midfield
      // dist
 
 // 4 Bar
-#define MANUAL_MOVE_EFFORT 100               // % of max effort
-#define ENCODER_SAMPLING_TIME 100            // ms
-#define STAGING_PLATFORM_ANGLE -19.1         // deg
-#define HOUSE_45_DEG_PANEL_MOVE_IN_ANGLE 35  // deg
-#define HOUSE_45_DEG_PANEL_ANGLE 41.78       // deg
-#define HOUSE_25_DEG_PANEL_MOVE_IN_ANGLE 55  // deg
-#define HOUSE_25_DEG_PANEL_ANGLE 75          // deg
-#define CLEARANCE_ANGLE 70                   // deg
-#define STAGING_CLEARANCE_ANGLE 0            // deg
+#define MANUAL_MOVE_EFFORT 100                 // % of max effort
+#define ENCODER_SAMPLING_TIME 100              // ms
+#define STAGING_PLATFORM_ANGLE -19.1           // deg
+#define HOUSE_45_DEG_PANEL_MOVE_IN_ANGLE 32.5  // deg
+#define HOUSE_45_DEG_PANEL_ANGLE 41.78         // deg
+#define HOUSE_25_DEG_PANEL_MOVE_IN_ANGLE 55    // deg
+#define HOUSE_25_DEG_PANEL_ANGLE 75            // deg
+#define CLEARANCE_ANGLE 70                     // deg
+#define STAGING_CLEARANCE_ANGLE 0              // deg
 
 // IR Codes
 #define E_STOP REMOTE_VOL_MINUS
@@ -321,11 +322,15 @@ void setup() {
     chassis.driveFor(MIDFIELD_DIST_BEFORE_US * INCHES_TO_CM,
                      FORWARD_SPEED * INCHES_TO_CM, true);
     followUntilDist((TURN_DIR)-fieldSide, SECOND_MIDFIELD_US_DIST);
+    chassis.driveFor(SECOND_MIDFIELD_EXTRA_MOVE_DIST * INCHES_TO_CM,
+                     FORWARD_SPEED * INCHES_TO_CM, true);
     while (!blueMotor.moveTo(STAGING_PLATFORM_ANGLE))
       ;
     waitForConfirmation();  // to make sure the plate is placed correctly
     while (!gripper.setDesiredState(OPEN))
       ;
+    chassis.driveFor(-BACKUP_DIST * INCHES_TO_CM, BACKUP_SPEED * INCHES_TO_CM,
+                     true);
     waitForConfirmation();  // to make sure that the new plate is placed
 #endif
 #ifdef SECOND_ENABLE_NEW_PLATE_DROP_OFF

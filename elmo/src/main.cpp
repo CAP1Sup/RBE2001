@@ -20,7 +20,7 @@
 // Chassis
 #define FORWARD_SPEED 3                // in/s
 #define HOUSE_GO_AROUND_DIST 16        // in
-#define HOUSE_SIDE_TRAVEL_DIST 22      // in
+#define HOUSE_SIDE_TRAVEL_DIST 20      // in
 #define MIDFIELD_DIST_FROM_LINE 8.5    // in
 #define MIDFIELD_DIST_BEFORE_US 2      // in
 #define BACKUP_SPEED 1.5               // in/s
@@ -31,6 +31,7 @@
 #define TURN_SPEED 30                  // deg/s
 #define SEARCH_EFFORT 50               // Motor power, 0-300ish
 #define END_SPEED 3                    // in/s
+#define FIRST_END_MOVE_COUNT 1440 / 2  // Encoder counts
 #define END_MOVE_COUNT 1440 / 3        // Encoder counts
 
 // Line following
@@ -247,8 +248,15 @@ void setup() {
         ;
 
       // Move to other side of field
-      chassis.driveFor(-BACKUP_DIST * INCHES_TO_CM, BACKUP_SPEED * INCHES_TO_CM,
-                       true);
+      chassis.getLeftEncoderCount(true);
+      chassis.setWheelSpeeds(-END_SPEED * INCHES_TO_CM,
+                             -END_SPEED * INCHES_TO_CM);
+      while (!blueMotor.moveTo(STAGING_PLATFORM_ANGLE)) {
+        if (chassis.getLeftEncoderCount(false) < -FIRST_END_MOVE_COUNT) {
+          chassis.idle();
+        }
+      }
+      chassis.idle();
       while (!blueMotor.moveTo(STAGING_PLATFORM_ANGLE))
         ;
       chassis.turnFor(90 * fieldSide, TURN_SPEED, true);
