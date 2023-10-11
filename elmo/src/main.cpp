@@ -18,38 +18,44 @@
 #define SECOND_ENABLE_NEW_PLATE_DROP_OFF
 
 // Chassis
-#define FORWARD_SPEED 3              // in/s
-#define HOUSE_GO_AROUND_DIST 12      // in
-#define HOUSE_SIDE_TRAVEL_DIST 18    // in
-#define MIDFIELD_DIST_FROM_LINE 8.5  // in
-#define MIDFIELD_DIST_BEFORE_US 2    // in
-#define BACKUP_SPEED 1.5             // in/s
-#define BACKUP_DIST 4                // in
-#define MIDFIELD_BACKUP_DIST 4       // in
-#define TURNAROUND_ANGLE 160         // deg
-#define TURN_SPEED 30                // deg/s
-#define SEARCH_EFFORT 100            // Motor power, 0-300ish
-#define END_SPEED 3                  // in/s
-#define END_MOVE_COUNT 1440 / 3      // Encoder counts
+#define FORWARD_SPEED 3                // in/s
+#define HOUSE_GO_AROUND_DIST 16        // in
+#define HOUSE_SIDE_TRAVEL_DIST 22      // in
+#define MIDFIELD_DIST_FROM_LINE 8.5    // in
+#define MIDFIELD_DIST_BEFORE_US 2      // in
+#define BACKUP_SPEED 1.5               // in/s
+#define BACKUP_DIST 4                  // in
+#define FIRST_MIDFIELD_BACKUP_DIST 1   // in
+#define SECOND_MIDFIELD_BACKUP_DIST 4  // in
+#define TURNAROUND_ANGLE 160           // deg
+#define TURN_SPEED 30                  // deg/s
+#define SEARCH_EFFORT 50               // Motor power, 0-300ish
+#define END_SPEED 3                    // in/s
+#define END_MOVE_COUNT 1440 / 3        // Encoder counts
 
 // Line following
 #define BLACK_THRESHOLD 500  // White: ~40, Black: ~800
 #define LINE_FOLLOW_P 0.1    // deg/s per difference in sensor values
 
 // Ultrasonic distances
-#define STAGING_US_DIST 1                // in
+#define STAGING_US_DIST 1.5              // in
 #define HOUSE_25_US_MOVE_IN_DIST 3.5     // in
 #define HOUSE_25_US_MOVE_IN_DIST_2 2.75  // in
 #define HOUSE_25_US_DIST 1.75            // in
 #define HOUSE_45_US_MOVE_IN_DIST 3       // in
 #define HOUSE_45_US_DIST 2.5             // in
-#define MIDFIELD_US_DIST 1.5  // in, should be more than staging block dist
+#define FIRST_MIDFIELD_US_DIST \
+  3.5  // in, should be more than staging block dist
+#define SECOND_MIDFIELD_US_DIST 1.5  // in
+#define MIDFIELD_RAM_US_DIST \
+  1  // in, should be less than second midfield
+     // dist
 
 // 4 Bar
 #define MANUAL_MOVE_EFFORT 100                 // % of max effort
 #define ENCODER_SAMPLING_TIME 100              // ms
 #define STAGING_PLATFORM_ANGLE -19.06          // deg
-#define HOUSE_45_DEG_PANEL_MOVE_IN_ANGLE 25    // deg
+#define HOUSE_45_DEG_PANEL_MOVE_IN_ANGLE 30    // deg
 #define HOUSE_45_DEG_PANEL_ANGLE 36.78         // deg
 #define HOUSE_25_DEG_PANEL_MOVE_IN_ANGLE 40    // deg
 #define HOUSE_25_DEG_PANEL_MOVE_IN_ANGLE_2 50  // deg
@@ -59,8 +65,8 @@
 #define STAGING_CLEARANCE_ANGLE 0              // deg
 
 // IR Codes
-#define E_STOP REMOTE_VOL_MINUS
-#define CONFIRM REMOTE_PLAY_PAUSE
+#define E_STOP REMOTE_VOL_PLUS
+#define CONFIRM REMOTE_STOP_MODE
 
 // Conversions
 #define INCHES_TO_CM 2.54
@@ -110,6 +116,7 @@ void waitForConfirmation() {
     if (!waitingForConfirm) {
       break;
     }
+    Serial.println(blueMotor.getAngle());
     delay(10);
   }
 }
@@ -259,7 +266,7 @@ void setup() {
     } else {
 #ifdef FIRST_ENABLE_MIDFIELD_PLATE_PICKUP
       // Old panel grab from midfield (from 2nd robot)
-      driveUntilDist(MIDFIELD_US_DIST);
+      driveUntilDist(FIRST_MIDFIELD_US_DIST);
       followUntilDist(LEFT, STAGING_US_DIST);
       while (!gripper.setDesiredState(CLOSED))
         ;
@@ -283,10 +290,10 @@ void setup() {
         ;
       while (!blueMotor.moveTo(STAGING_CLEARANCE_ANGLE))
         ;
-      chassis.driveFor(-MIDFIELD_BACKUP_DIST * INCHES_TO_CM,
+      chassis.driveFor(-FIRST_MIDFIELD_BACKUP_DIST * INCHES_TO_CM,
                        BACKUP_SPEED * INCHES_TO_CM, true);
       chassis.turnFor(90 * -fieldSide, TURN_SPEED, true);
-      driveUntilDist(MIDFIELD_US_DIST);
+      driveUntilDist(FIRST_MIDFIELD_US_DIST);
       followUntilDist(LEFT, STAGING_US_DIST);
       while (!blueMotor.moveTo(STAGING_PLATFORM_ANGLE))
         ;
@@ -301,9 +308,6 @@ void setup() {
     // Robot must be second
     // Old panel grab
 #ifdef SECOND_ENABLE_OLD_PLATE_PICKUP
-    chassis.turnFor(TURNAROUND_ANGLE, TURN_SPEED, true);
-    followUntilCross(LEFT);
-    turnOnCross((TURN_DIR)fieldSide);
     raise4Bar();
     while (!gripper.setDesiredState(CLOSED))
       ;
@@ -322,7 +326,7 @@ void setup() {
     chassis.turnFor(90 * -fieldSide, TURN_SPEED, true);
     chassis.driveFor(MIDFIELD_DIST_BEFORE_US * INCHES_TO_CM,
                      FORWARD_SPEED * INCHES_TO_CM, true);
-    followUntilDist((TURN_DIR)-fieldSide, MIDFIELD_US_DIST);
+    followUntilDist((TURN_DIR)-fieldSide, SECOND_MIDFIELD_US_DIST);
     while (!blueMotor.moveTo(STAGING_PLATFORM_ANGLE))
       ;
     waitForConfirmation();  // to make sure the plate is placed correctly
@@ -332,11 +336,12 @@ void setup() {
 #endif
 #ifdef SECOND_ENABLE_NEW_PLATE_DROP_OFF
     // New panel placement
+    driveUntilDist(MIDFIELD_RAM_US_DIST);
     while (!gripper.setDesiredState(CLOSED))
       ;
     while (!blueMotor.moveTo(BALANCE_ANGLE))
       ;
-    chassis.driveFor(-MIDFIELD_BACKUP_DIST * INCHES_TO_CM,
+    chassis.driveFor(-SECOND_MIDFIELD_BACKUP_DIST * INCHES_TO_CM,
                      BACKUP_SPEED * INCHES_TO_CM, true);
     chassis.turnFor(90 * -fieldSide, TURN_SPEED, true);
     driveUntilCross();
@@ -352,6 +357,7 @@ void setup() {
       while (!blueMotor.moveTo(HOUSE_45_DEG_PANEL_ANGLE))
         ;
     }
+    waitForConfirmation();  // to make sure that the plate is placed correctly
     while (!gripper.setDesiredState(OPEN))
       ;
     // Start backing up
