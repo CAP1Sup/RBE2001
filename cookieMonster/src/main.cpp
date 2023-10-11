@@ -159,14 +159,6 @@ void setup() {
     } else {
       blueMotor.setEffort(0);
     }
-    if (Serial.available() > 0) {
-      char c = Serial.read();
-      if (c == '1') {
-        fieldSide = LEFT_SIDE;
-      } else if (c == '3') {
-        fieldSide = RIGHT_SIDE;
-      }
-    }
     delay(10);
   }
 
