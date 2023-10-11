@@ -89,9 +89,11 @@ bool LinearGripper::setDesiredState(GripperState state) {
       setSpeed(SERVO_SPEED);
 
       // Reset the rate calculations/flags
+      noInterrupts();
       potRateStartTime = millis() + EXTRA_START_SAMPLING_PERIOD;
       prevPotPos = getPosition();
       closeFailed = false;
+      interrupts();
     }
 
     // Make sure that the close didn't fail
@@ -118,11 +120,13 @@ bool LinearGripper::setDesiredState(GripperState state) {
           setSpeed(-SERVO_SPEED);
           closeFailed = true;
         } else {
+          noInterrupts();
           // Reset the start time
           potRateStartTime = millis();
 
           // Save the current encoder position
           prevPotPos = getPosition();
+          interrupts();
         }
 #endif
       }
