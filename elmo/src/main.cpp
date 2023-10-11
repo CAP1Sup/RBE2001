@@ -10,8 +10,8 @@
 // Overall section enable
 // #define ENABLE_GRIPPER_TESTING
 // #define ENABLE_US_TESTING
-#define ENABLE_OLD_PLATE_PICKUP
-#define ENABLE_NEW_PLATE_DROP_OFF
+#define SECOND_ENABLE_OLD_PLATE_PICKUP
+#define SECOND_ENABLE_NEW_PLATE_DROP_OFF
 
 // Chassis
 #define FORWARD_SPEED 3              // in/s
@@ -92,6 +92,7 @@ bool waitingForConfirm = false;
 
 // Function prototypes
 void processIRPress();
+void raise4Bar();
 
 // Convenience function
 void waitForConfirmation() {
@@ -195,28 +196,11 @@ void setup() {
   }
 #endif
 // Old panel grab
-#ifdef ENABLE_OLD_PLATE_PICKUP
+#ifdef SECOND_ENABLE_OLD_PLATE_PICKUP
   chassis.turnFor(TURNAROUND_ANGLE, TURN_SPEED, true);
   followUntilCross(LEFT);
   turnOnCross((TURN_DIR)fieldSide);
-  if (fieldSide == RIGHT_SIDE) {
-    while (!blueMotor.moveTo(HOUSE_25_DEG_PANEL_MOVE_IN_ANGLE))
-      ;
-    followUntilDist((TURN_DIR)fieldSide, HOUSE_25_US_MOVE_IN_DIST);
-    while (!blueMotor.moveTo(HOUSE_25_DEG_PANEL_MOVE_IN_ANGLE_2))
-      ;
-    followUntilDist((TURN_DIR)fieldSide, HOUSE_25_US_MOVE_IN_DIST_2);
-    while (!blueMotor.moveTo(HOUSE_25_DEG_PANEL_ANGLE))
-      ;
-    driveUntilDist(HOUSE_25_US_DIST);
-  } else {
-    while (!blueMotor.moveTo(HOUSE_45_DEG_PANEL_MOVE_IN_ANGLE))
-      ;
-    followUntilDist((TURN_DIR)fieldSide, HOUSE_45_US_MOVE_IN_DIST);
-    while (!blueMotor.moveTo(HOUSE_45_DEG_PANEL_ANGLE))
-      ;
-    driveUntilDist(HOUSE_45_US_DIST);
-  }
+  raise4Bar();
   while (!gripper.setDesiredState(CLOSED))
     ;
 
@@ -240,7 +224,7 @@ void setup() {
     ;
   waitForConfirmation();
 #endif
-#ifdef ENABLE_NEW_PLATE_DROP_OFF
+#ifdef SECOND_ENABLE_NEW_PLATE_DROP_OFF
   // New panel placement
   while (!gripper.setDesiredState(CLOSED))
     ;
@@ -327,4 +311,29 @@ void processIRPress() {
 
   // Re-enable the interrupts
   interrupts();
+}
+
+/**
+ * @brief Raises the 4 bar to the house side
+ *
+ */
+void raise4bar() {
+  if (fieldSide == RIGHT_SIDE) {
+    while (!blueMotor.moveTo(HOUSE_25_DEG_PANEL_MOVE_IN_ANGLE))
+      ;
+    followUntilDist((TURN_DIR)fieldSide, HOUSE_25_US_MOVE_IN_DIST);
+    while (!blueMotor.moveTo(HOUSE_25_DEG_PANEL_MOVE_IN_ANGLE_2))
+      ;
+    followUntilDist((TURN_DIR)fieldSide, HOUSE_25_US_MOVE_IN_DIST_2);
+    while (!blueMotor.moveTo(HOUSE_25_DEG_PANEL_ANGLE))
+      ;
+    driveUntilDist(HOUSE_25_US_DIST);
+  } else {
+    while (!blueMotor.moveTo(HOUSE_45_DEG_PANEL_MOVE_IN_ANGLE))
+      ;
+    followUntilDist((TURN_DIR)fieldSide, HOUSE_45_US_MOVE_IN_DIST);
+    while (!blueMotor.moveTo(HOUSE_45_DEG_PANEL_ANGLE))
+      ;
+    driveUntilDist(HOUSE_45_US_DIST);
+  }
 }
