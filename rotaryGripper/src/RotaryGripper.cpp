@@ -75,10 +75,8 @@ bool RotaryGripper::setDesiredState(GripperState state) {
       // Move the motor to open the gripper
       setAngle(OPEN_SERVO_ANGLE);
 
-      noInterrupts();
       // Record the time
       lastSetTime = millis();
-      interrupts();
     }
 
     // Update the previous state
@@ -98,10 +96,8 @@ bool RotaryGripper::setDesiredState(GripperState state) {
       setAngle(CLOSED_SERVO_ANGLE);
 
       // Record the time
-      noInterrupts();
       lastSetTime = millis();
       closeFailed = false;
-      interrupts();
     }
 
     // Make sure that the close didn't fail

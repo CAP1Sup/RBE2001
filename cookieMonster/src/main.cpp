@@ -91,16 +91,13 @@ void processIRPress();
 
 // Convenience function
 void waitForConfirmation() {
-  delay(3000);
-  /*waitingForConfirm = true;
+  waitingForConfirm = true;
   while (true) {
-    noInterrupts();
     if (!waitingForConfirm) {
       break;
     }
-    interrupts();
     delay(10);
-  }*/
+  }
 }
 
 void setup() {
@@ -289,8 +286,6 @@ void loop() {}
  *
  */
 void processIRPress() {
-  // Disable the interrupts
-  noInterrupts();
 
   // Get the key code
   int16_t keyCode = irProcessor.getKeyCode();
@@ -330,7 +325,4 @@ void processIRPress() {
   } else {
     irCode = keyCode;
   }
-
-  // Re-enable the interrupts
-  interrupts();
 }
