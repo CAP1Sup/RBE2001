@@ -42,6 +42,9 @@ void LinearGripper::init() {
  * @param speed The speed to set the servo to (-100 to 100)
  */
 void LinearGripper::setSpeed(int speed) {
+  if (eStop) {
+    return;
+  }
   servo.writeMicroseconds(map(speed, -100, 100, 1000, 2000));
 }
 
@@ -62,6 +65,9 @@ bool LinearGripper::setDesiredState(GripperState state) {
 #ifdef DEBUG
   Serial.println(getPosition());
 #endif
+  if (eStop) {
+    return false;
+  }
   if (state == OPEN) {
     // Check if the gripper has just started opening
     if (prevSetState != OPEN) {
@@ -156,3 +162,15 @@ bool LinearGripper::setDesiredState(GripperState state) {
  * @return GripperState The current state of the gripper
  */
 GripperState LinearGripper::getCurrentState() { return currentState; }
+
+/**
+ * @brief Sets the e-stop state of the gripper
+ *
+ * @param eStop The e-stop state to set
+ */
+void LinearGripper::setEStop(bool eStop) {
+  if (eStop) {
+    setSpeed(0);
+  }
+  this->eStop = eStop;
+}

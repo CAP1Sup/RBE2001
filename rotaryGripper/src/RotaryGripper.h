@@ -40,7 +40,7 @@ class RotaryGripper {
   GripperState prevSetState = UNKNOWN;
   GripperState currentState = UNKNOWN;
   uint32_t lastSetTime = 0;
-  bool closeFailed = false;
+  bool closeFailed;
   bool eStop = false;
 };
 

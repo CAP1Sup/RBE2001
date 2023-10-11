@@ -32,6 +32,7 @@ class LinearGripper {
   int16_t getPosition();
   bool setDesiredState(GripperState state);
   GripperState getCurrentState();
+  void setEStop(bool eStop);
 
  private:
   Servo32U4Pin5 servo;
@@ -41,6 +42,7 @@ class LinearGripper {
   uint32_t potRateStartTime;
   uint16_t prevPotPos;
   bool closeFailed;
+  bool eStop = false;
 };
 
 // Include the source file
