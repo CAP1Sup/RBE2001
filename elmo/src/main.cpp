@@ -116,7 +116,6 @@ void waitForConfirmation() {
     if (!waitingForConfirm) {
       break;
     }
-    Serial.println(blueMotor.getAngle());
     delay(10);
   }
 }
